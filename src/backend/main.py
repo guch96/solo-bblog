@@ -1,10 +1,19 @@
 """PoopTracker 后端入口"""
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import models  # noqa: F401 确保 SQLAlchemy 模型注册
 from database import engine, Base
 
-app = FastAPI(title="PoopTracker API", version="0.1.0")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """应用生命周期：启动时建表"""
+    Base.metadata.create_all(bind=engine)
+    yield
+
+
+app = FastAPI(title="PoopTracker API", version="0.1.0", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -14,11 +23,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+from routers import records  # noqa: E402
 
-@app.on_event("startup")
-def init_db():
-    """应用启动时自动创建数据库表"""
-    Base.metadata.create_all(bind=engine)
+app.include_router(records.router)
 
 
 @app.get("/api/health")
