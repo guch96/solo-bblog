@@ -23,9 +23,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-from routers import records  # noqa: E402
+from routers import records, analyses  # noqa: E402
 
 app.include_router(records.router)
+app.include_router(analyses.router)
 
 
 @app.get("/api/health")
