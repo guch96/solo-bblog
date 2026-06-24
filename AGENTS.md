@@ -1,14 +1,4 @@
 # AGENTS.md
-
-## 项目概述
-
-便便健康记录工具（PoopTracker）——记录每日如厕情况，AI 分析给出健康建议。
-
-**技术栈：**
-- 前端：Next.js + TypeScript + Tailwind CSS + shadcn/ui
-- 后端：Python FastAPI + SQLite + SQLAlchemy + uv（包管理）
-- AI：OpenAI API / LangChain（支持多 LLM 厂商切换）
-
 ---
 
 Behavioral guidelines to reduce common LLM coding mistakes. Merge with project-specific instructions as needed.
@@ -80,7 +70,7 @@ These local instructions override default Superpowers workflows when they confli
 - For lightweight tasks, analyze the code and implement directly by default. Ask only when there is a key uncertainty, and ask at most one question first.
 - Do not repeat questions when the project context, this `AGENTS.md`, or existing code already provides the answer.
 - Do not create a worktree unless the user explicitly asks for one.
-- Do not commit specs or plans to git unless the user explicitly asks for that.
+- Specs and plans may be committed to git as part of normal development workflow.
 - In Codex, prefer `executing-plans` by default instead of `subagent-driven-development`.
 - Use `subagent-driven-development` only when the task is clearly suitable for parallel work and the platform supports subagents well.
 - Any spec or plan generated through Superpowers workflows must be written in Chinese by default unless the user explicitly requests another language.
@@ -100,11 +90,35 @@ These local instructions override default Superpowers workflows when they confli
 
 ## 7. 项目特定约束
 
-- **前端开发**使用 frontend-design skill 监控 UI 质量
-- **AI 分析模块**使用 OpenAI API / LangChain，做通用化抽象支持多 LLM 厂商切换
+- **AI 分析模块**使用 OpenAI API，自定义 Provider 抽象层支持多 LLM 厂商切换
 - **代码注语言**：使用中文注释关键业务逻辑
 - **日志**：关键执行点添加 debug/info 日志，便于开发调试
 
 ---
 
 **These guidelines are working if:** fewer unnecessary changes in diffs, fewer rewrites due to overcomplication, and clarifying questions come before implementation rather than after mistakes.
+
+
+
+## 项目概述
+
+便便健康记录工具（PoopTracker）——记录每日如厕情况，AI 分析给出健康建议。
+
+**技术栈：**
+- 前端：Next.js + TypeScript + Tailwind CSS + shadcn/ui
+- 后端：Python FastAPI + SQLite + SQLAlchemy + uv（包管理）
+- AI：OpenAI API（自定义 Provider 抽象层，支持多 LLM 厂商切换）
+
+**目录结构：**
+```
+solo-bblog/
+├─ README.md          # 项目说明
+├─ JOURNAL.md         # 开发日志
+├─ AGENTS.md          # 行为约束
+├─ CLAUDE.md          # Claude Code 配置
+├─ .claude/           # CC skills/hooks/commands
+├─ src/
+│  ├─ frontend/       # Next.js 前端
+│  └─ backend/        # FastAPI 后端
+└─ docs/              # 设计文档
+```

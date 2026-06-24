@@ -10,13 +10,13 @@
 - **每日多次**：支持一天记录多次
 - **数据可视化**：日历热力图、趋势统计图表
 - **AI 健康分析**：选择时间范围，AI 分析记录数据并给出健康建议
-- **多 LLM 支持**：AI 分析支持切换不同 LLM 厂商（OpenAI、Claude 等）
+- **多 LLM 支持**：自定义 Provider 抽象层，支持切换不同 LLM 厂商
 
 ## 技术栈
 
 - **前端**：Next.js + TypeScript + Tailwind CSS + shadcn/ui
 - **后端**：Python FastAPI + SQLite + SQLAlchemy + uv（包管理）
-- **AI**：OpenAI API / LangChain（可扩展）
+- **AI**：OpenAI API（自定义 Provider 抽象层，支持多 LLM 厂商切换）
 
 ## 快速开始
 
@@ -62,8 +62,8 @@ LLM_PROVIDER=openai           # 默认 LLM 厂商（openai / claude）
 solo-bblog/
 ├─ README.md              # 本文件
 ├─ JOURNAL.md             # 开发日志
-├─ AGENTS.md              # AI 助手行为约束
-├─ CLAUDE.md              # Claude Code 配置
+├─ AGENTS.md              # 项目概述 + 行为约束（通用）
+├─ CLAUDE.md              # Claude Code 专属配置
 ├─ .claude/               # CC skills/hooks/commands
 ├─ src/
 │  ├─ frontend/           # Next.js 前端
