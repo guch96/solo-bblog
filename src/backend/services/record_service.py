@@ -1,6 +1,7 @@
 """记录业务逻辑"""
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 from models import Record
 from schemas import RecordCreate, RecordUpdate
@@ -80,3 +81,66 @@ def delete_record(db: Session, record_id: int) -> bool:
     db.commit()
     logger.info("记录删除成功: id=%d", record_id)
     return True
+
+
+def get_calendar_data(db: Session, month: str) -> list[dict]:
+    """获取指定月份的日历热力图数据"""
+    logger.info("查询日历数据: month=%s", month)
+    year, month_num = month.split("-")
+    records = (
+        db.query(
+            func.date(Record.start_time).label("date"),
+            func.count(Record.id).label("count"),
+        )
+        .filter(
+            func.strftime("%Y", Record.start_time) == year,
+            func.strftime("%m", Record.start_time) == month_num,
+        )
+        .group_by(func.date(Record.start_time))
+        .all()
+    )
+    return [{"date": r.date, "count": r.count} for r in records]
+
+
+def get_stats(db: Session, days: int) -> dict:
+    """获取统计数据：频率、时长趋势、形状分布"""
+    logger.info("查询统计数据: days=%d", days)
+    cutoff = datetime.now(timezone.utc) - timedelta(days=days)
+
+    # 频率：每日记录次数
+    frequency = (
+        db.query(
+            func.date(Record.start_time).label("date"),
+            func.count(Record.id).label("count"),
+        )
+        .filter(Record.start_time >= cutoff)
+        .group_by(func.date(Record.start_time))
+        .order_by(func.date(Record.start_time))
+        .all()
+    )
+
+    # 时长趋势：每日平均时长
+    avg_duration = (
+        db.query(
+            func.date(Record.start_time).label("date"),
+            func.avg(Record.duration).label("avg_seconds"),
+        )
+        .filter(Record.start_time >= cutoff, Record.duration.isnot(None))
+        .group_by(func.date(Record.start_time))
+        .order_by(func.date(Record.start_time))
+        .all()
+    )
+
+    # 形状分布
+    shape_dist = (
+        db.query(Record.shape, func.count(Record.id).label("count"))
+        .filter(Record.shape.isnot(None))
+        .group_by(Record.shape)
+        .all()
+    )
+
+    return {
+        "frequency": [{"date": r.date, "count": r.count} for r in frequency],
+        "avg_duration": [{"date": r.date, "avg_seconds": round(r.avg_seconds, 1)} for r in avg_duration],
+        "shape_distribution": [{"shape": r.shape, "count": r.count} for r in shape_dist],
+    }

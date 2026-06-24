@@ -1,0 +1,50 @@
+"""日历热力图 + 统计 API 测试"""
+
+
+def test_calendar_data(client):
+    """测试日历热力图数据"""
+    # 创建两条同一天的记录
+    for i in range(2):
+        client.post("/api/records", json={
+            "start_time": "2026-06-24T08:00:00",
+            "input_mode": "manual",
+        })
+    # 创建一条第二天记录
+    client.post("/api/records", json={
+        "start_time": "2026-06-25T10:00:00",
+        "input_mode": "timer",
+    })
+
+    resp = client.get("/api/records/calendar?month=2026-06")
+    assert resp.status_code == 200
+    data = resp.json()
+    # 应该有 6/24 和 6/25 两天
+    dates = {d["date"] for d in data}
+    assert "2026-06-24" in dates
+    assert "2026-06-25" in dates
+    # 6/24 应该有 2 条记录
+    day_24 = next(d for d in data if d["date"] == "2026-06-24")
+    assert day_24["count"] == 2
+
+
+def test_stats_data(client):
+    """测试统计数据"""
+    # 创建不同形状的记录
+    records = [
+        {"start_time": "2026-06-20T08:00:00", "duration": 300, "shape": "4", "input_mode": "timer"},
+        {"start_time": "2026-06-23T09:00:00", "duration": 180, "shape": "3", "input_mode": "manual"},
+        {"start_time": "2026-06-24T10:00:00", "duration": 600, "shape": "4", "input_mode": "timer"},
+    ]
+    for r in records:
+        client.post("/api/records", json=r)
+
+    resp = client.get("/api/records/stats?days=7")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert "frequency" in data
+    assert "avg_duration" in data
+    assert "shape_distribution" in data
+    # 形状分布: type_4 应该有 2 条
+    shapes = {s["shape"]: s["count"] for s in data["shape_distribution"]}
+    assert shapes["4"] == 2
+    assert shapes["3"] == 1

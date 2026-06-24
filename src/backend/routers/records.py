@@ -5,6 +5,7 @@ from database import get_db
 from schemas import RecordCreate, RecordUpdate, RecordResponse
 from services.record_service import (
     create_record, get_records, get_record_by_id, update_record, delete_record,
+    get_calendar_data, get_stats,
 )
 
 router = APIRouter(prefix="/api/records", tags=["records"])
@@ -24,6 +25,24 @@ def list_records(
 ):
     """获取记录列表，支持日期范围筛选"""
     return get_records(db, date_from, date_to)
+
+
+@router.get("/calendar", response_model=list[dict])
+def calendar_data(
+    month: str = Query(..., description="月份 YYYY-MM"),
+    db: Session = Depends(get_db),
+):
+    """获取日历热力图数据"""
+    return get_calendar_data(db, month)
+
+
+@router.get("/stats", response_model=dict)
+def stats_data(
+    days: int = Query(7, description="统计天数"),
+    db: Session = Depends(get_db),
+):
+    """获取统计数据"""
+    return get_stats(db, days)
 
 
 @router.get("/{record_id}", response_model=RecordResponse)
