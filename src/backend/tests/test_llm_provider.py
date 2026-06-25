@@ -66,6 +66,7 @@ def test_get_provider_returns_configured_instance(monkeypatch):
     monkeypatch.setenv("LLM_BASE_URL", "https://custom.api.com/v1")
     monkeypatch.setenv("LLM_TEMPERATURE", "0.3")
     monkeypatch.setenv("LLM_MAX_TOKENS", "4096")
+    monkeypatch.setenv("LLM_PROVIDER_NAME", "deepseek")
     provider = get_provider()
     assert isinstance(provider, OpenAICompatibleProvider)
     assert provider.model == "gpt-4o"
@@ -73,3 +74,4 @@ def test_get_provider_returns_configured_instance(monkeypatch):
     assert provider.base_url == "https://custom.api.com/v1"
     assert provider.temperature == 0.3
     assert provider.max_tokens == 4096
+    assert provider.provider_name == "deepseek"

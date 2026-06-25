@@ -45,6 +45,7 @@ class OpenAICompatibleProvider(LLMProvider):
         self.base_url = os.getenv("LLM_BASE_URL", "https://api.openai.com/v1")
         self.temperature = float(os.getenv("LLM_TEMPERATURE", "0.7"))
         self.max_tokens = int(os.getenv("LLM_MAX_TOKENS", "2048"))
+        self.provider_name = os.getenv("LLM_PROVIDER_NAME", "openai")
 
     def _build_client(self):
         from openai import OpenAI
@@ -85,6 +86,16 @@ JSON 格式：{"suggestions": ["建议1", "建议2", ...]}"""
         )
 
         content = response.choices[0].message.content
+        if content is None:
+            logger.warning("LLM 返回空 content，total_tokens=%d finish_reason=%s",
+                          response.usage.total_tokens if response.usage else 0,
+                          response.choices[0].finish_reason)
+            return {
+                "summary": "",
+                "suggestions": [],
+                "model": self.model,
+                "provider": self.provider_name,
+            }
         result = self._parse_response(content)
         logger.info("分析完成: tokens=%d", response.usage.total_tokens)
 
@@ -92,7 +103,7 @@ JSON 格式：{"suggestions": ["建议1", "建议2", ...]}"""
             "summary": result["summary"],
             "suggestions": result["suggestions"],
             "model": self.model,
-            "provider": "openai",
+            "provider": self.provider_name,
         }
 
     def analyze_stream(self, records: list[dict], date_from: str, date_to: str) -> Generator[str, None, None]:
@@ -116,6 +127,7 @@ JSON 格式：{"suggestions": ["建议1", "建议2", ...]}"""
 
         buffer = ""
         summary_done = False
+        summary_streamed_len = 0  # 已逐 token 推送的摘要长度，用于避免重复推送
 
         for chunk in stream:
             delta = chunk.choices[0].delta
@@ -124,19 +136,19 @@ JSON 格式：{"suggestions": ["建议1", "建议2", ...]}"""
 
                 # 检查是否遇到了分隔符
                 if "---SUGGESTIONS---" in buffer:
-                    # 分离摘要和建议
                     idx = buffer.index("---SUGGESTIONS---")
-                    summary_part = buffer[:idx]
-                    # 推送分隔符前尚未推送的摘要部分
-                    remaining_summary = summary_part
+                    # 只推送尚未通过 token 流送出的尾部（分隔符所在 chunk 中分隔符之前的部分）
                     if not summary_done:
-                        yield f"data: {json.dumps({'type': 'summary_chunk', 'content': remaining_summary})}\n\n"
+                        new_tail = buffer[:idx][summary_streamed_len:]
+                        if new_tail:
+                            yield f"data: {json.dumps({'type': 'summary_chunk', 'content': new_tail})}\n\n"
                         summary_done = True
                     # 切换 buffer 为分隔符后的内容
                     buffer = buffer[idx + len("---SUGGESTIONS---"):]
                 else:
                     if not summary_done:
                         yield f"data: {json.dumps({'type': 'summary_chunk', 'content': delta.content})}\n\n"
+                        summary_streamed_len += len(delta.content)
 
         # 流结束后解析剩余 buffer 中的 suggestions JSON
         try:
