@@ -16,6 +16,7 @@ class Record(Base):
     color = Column(String(20), nullable=True)  # 颜色枚举值
     smell = Column(String(20), nullable=True)  # 气味枚举值
     comfort = Column(String(20), nullable=True)  # 身体感受枚举值
+    process_feeling = Column(String(20), nullable=True)  # 排便过程感受
     notes = Column(Text, nullable=True)  # 备注
     input_mode = Column(String(10), nullable=False)  # timer / manual
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))

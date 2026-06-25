@@ -37,6 +37,7 @@ def run_analysis(db: Session, date_from: str, date_to: str) -> Analysis:
             "color": r.color,
             "smell": r.smell,
             "comfort": r.comfort,
+            "process_feeling": r.process_feeling,
             "notes": r.notes,
             "input_mode": r.input_mode,
         }

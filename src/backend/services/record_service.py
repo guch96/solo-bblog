@@ -20,6 +20,7 @@ def create_record(db: Session, data: RecordCreate) -> Record:
         color=data.color.value if data.color else None,
         smell=data.smell.value if data.smell else None,
         comfort=data.comfort.value if data.comfort else None,
+        process_feeling=data.process_feeling.value if data.process_feeling else None,
         notes=data.notes,
         input_mode=data.input_mode.value,
     )
@@ -58,7 +59,7 @@ def update_record(db: Session, record_id: int, data: RecordUpdate) -> Record | N
         return None
     update_data = data.model_dump(exclude_unset=True)
     # 枚举字段转值
-    for field in ["shape", "color", "smell", "comfort", "input_mode"]:
+    for field in ["shape", "color", "smell", "comfort", "process_feeling", "input_mode"]:
         if field in update_data and update_data[field] is not None:
             update_data[field] = update_data[field].value
     for key, value in update_data.items():

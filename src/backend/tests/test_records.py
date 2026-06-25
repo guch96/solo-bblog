@@ -73,3 +73,61 @@ def test_delete_record(client):
     # 确认已删除
     resp = client.get("/api/records/1")
     assert resp.status_code == 404
+
+
+def test_create_record_with_process_feeling(client):
+    """测试创建包含排便过程感受的记录"""
+    payload = {
+        "start_time": "2026-06-24T08:00:00",
+        "end_time": "2026-06-24T08:10:00",
+        "duration": 600,
+        "shape": "4",
+        "color": "brown",
+        "smell": "normal",
+        "comfort": "comfortable",
+        "process_feeling": "smooth",
+        "notes": "顺畅",
+        "input_mode": "timer",
+    }
+    resp = client.post("/api/records", json=payload)
+    assert resp.status_code == 201
+    data = resp.json()
+    assert data["process_feeling"] == "smooth"
+
+
+def test_create_record_without_process_feeling(client):
+    """测试不填过程感受也能创建记录"""
+    payload = {
+        "start_time": "2026-06-24T08:00:00",
+        "input_mode": "manual",
+    }
+    resp = client.post("/api/records", json=payload)
+    assert resp.status_code == 201
+    data = resp.json()
+    assert data["process_feeling"] is None
+
+
+def test_update_record_process_feeling(client):
+    """测试更新排便过程感受"""
+    client.post("/api/records", json={
+        "start_time": "2026-06-24T08:00:00",
+        "input_mode": "manual",
+    })
+    update = {"process_feeling": "urgent"}
+    resp = client.put("/api/records/1", json=update)
+    assert resp.status_code == 200
+    assert resp.json()["process_feeling"] == "urgent"
+
+
+def test_record_has_all_process_feeling_values(client):
+    """测试所有过程感受枚举值都能正确存储"""
+    values = ["smooth", "urgent", "straining", "incomplete", "intermittent", "normal", "other"]
+    for v in values:
+        payload = {
+            "start_time": "2026-06-24T08:00:00",
+            "process_feeling": v,
+            "input_mode": "manual",
+        }
+        resp = client.post("/api/records", json=payload)
+        assert resp.status_code == 201
+        assert resp.json()["process_feeling"] == v

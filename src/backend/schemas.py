@@ -40,6 +40,16 @@ class ComfortEnum(str, Enum):
     OTHER = "other"
 
 
+class ProcessFeelingEnum(str, Enum):
+    SMOOTH = "smooth"
+    URGENT = "urgent"
+    STRAINING = "straining"
+    INCOMPLETE = "incomplete"
+    INTERMITTENT = "intermittent"
+    NORMAL = "normal"
+    OTHER = "other"
+
+
 class InputModeEnum(str, Enum):
     TIMER = "timer"
     MANUAL = "manual"
@@ -55,6 +65,7 @@ class RecordCreate(BaseModel):
     color: ColorEnum | None = None
     smell: SmellEnum | None = None
     comfort: ComfortEnum | None = None
+    process_feeling: ProcessFeelingEnum | None = None
     notes: str | None = None
     input_mode: InputModeEnum
 
@@ -68,6 +79,7 @@ class RecordUpdate(BaseModel):
     color: ColorEnum | None = None
     smell: SmellEnum | None = None
     comfort: ComfortEnum | None = None
+    process_feeling: ProcessFeelingEnum | None = None
     notes: str | None = None
     input_mode: InputModeEnum | None = None
 
@@ -82,6 +94,7 @@ class RecordResponse(BaseModel):
     color: str | None
     smell: str | None
     comfort: str | None
+    process_feeling: str | None
     notes: str | None
     input_mode: str
     created_at: datetime
