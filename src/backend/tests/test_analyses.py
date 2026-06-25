@@ -1,5 +1,5 @@
 """AI 分析 API 测试"""
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 
 
 def test_create_analysis(client):
@@ -11,9 +11,16 @@ def test_create_analysis(client):
             "input_mode": "timer",
         })
 
-    with patch("services.analysis_service.get_provider") as mock_get_provider:
-        from services.llm_provider import MockOpenAIProvider
-        mock_get_provider.return_value = MockOpenAIProvider("mock-model")
+    mock_provider = MagicMock()
+    mock_provider.model = "mock-model"
+    mock_provider.analyze.return_value = {
+        "summary": "测试摘要：分析了 3 条记录，您的肠道健康状况良好。",
+        "suggestions": ["多喝水", "多吃纤维"],
+        "model": "mock-model",
+        "provider": "mock_provider",
+    }
+
+    with patch("services.analysis_service.get_provider", return_value=mock_provider):
         resp = client.post("/api/analyses", json={
             "date_from": "2026-06-24",
             "date_to": "2026-06-24",
@@ -31,9 +38,16 @@ def test_get_analyses(client):
         "input_mode": "timer",
     })
 
-    with patch("services.analysis_service.get_provider") as mock_get_provider:
-        from services.llm_provider import MockOpenAIProvider
-        mock_get_provider.return_value = MockOpenAIProvider("mock-model")
+    mock_provider = MagicMock()
+    mock_provider.model = "mock-model"
+    mock_provider.analyze.return_value = {
+        "summary": "测试摘要",
+        "suggestions": ["建议1"],
+        "model": "mock-model",
+        "provider": "mock_provider",
+    }
+
+    with patch("services.analysis_service.get_provider", return_value=mock_provider):
         client.post("/api/analyses", json={
             "date_from": "2026-06-24",
             "date_to": "2026-06-24",
@@ -51,9 +65,16 @@ def test_get_analysis_detail(client):
         "input_mode": "timer",
     })
 
-    with patch("services.analysis_service.get_provider") as mock_get_provider:
-        from services.llm_provider import MockOpenAIProvider
-        mock_get_provider.return_value = MockOpenAIProvider("mock-model")
+    mock_provider = MagicMock()
+    mock_provider.model = "mock-model"
+    mock_provider.analyze.return_value = {
+        "summary": "分析详情测试",
+        "suggestions": [],
+        "model": "mock-model",
+        "provider": "mock_provider",
+    }
+
+    with patch("services.analysis_service.get_provider", return_value=mock_provider):
         client.post("/api/analyses", json={
             "date_from": "2026-06-24",
             "date_to": "2026-06-24",

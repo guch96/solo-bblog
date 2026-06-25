@@ -1,5 +1,5 @@
 """LLM Provider 测试"""
-from services.llm_provider import LLMProvider, OpenAIProvider, get_provider
+from services.llm_provider import LLMProvider, OpenAICompatibleProvider, get_provider
 
 
 class MockOpenAIProvider(LLMProvider):
@@ -11,6 +11,12 @@ class MockOpenAIProvider(LLMProvider):
             "model": "mock-model",
             "provider": "mock_provider",
         }
+
+    def analyze_stream(self, records: list[dict], date_from: str, date_to: str):
+        """流式分析的 mock 实现"""
+        yield 'data: {"type":"summary_chunk","content":"mock 摘要"}\n\n'
+        yield 'data: {"type":"suggestions","content":["建议1","建议2"]}\n\n'
+        yield 'data: {"type":"done"}\n\n'
 
 
 def test_provider_interface():
@@ -42,18 +48,28 @@ def test_provider_analyze_output_format():
         assert len(s) > 0
 
 
-def test_get_provider_openai(monkeypatch):
-    """测试根据配置获取 OpenAI provider"""
-    monkeypatch.setenv("LLM_PROVIDER", "openai")
-    monkeypatch.setenv("OPENAI_API_KEY", "test-key")
-    provider = get_provider()
-    assert isinstance(provider, OpenAIProvider)
-    assert provider.model == "gpt-4o-mini"
+def test_provider_analyze_stream():
+    """测试流式分析接口协议"""
+    provider = MockOpenAIProvider("mock-model")
+    events = list(provider.analyze_stream(
+        [{"shape": "4"}], "2026-06-24", "2026-06-24"
+    ))
+    assert len(events) == 3
+    assert events[0].startswith("data: ")
+    assert events[-1] == 'data: {"type":"done"}\n\n'
 
 
-def test_get_provider_unknown_fallback(monkeypatch):
-    """测试未知 provider 回退到 OpenAI"""
-    monkeypatch.setenv("LLM_PROVIDER", "unknown")
-    monkeypatch.setenv("OPENAI_API_KEY", "test-key")
+def test_get_provider_returns_configured_instance(monkeypatch):
+    """测试 get_provider 返回 OpenAICompatibleProvider 并使用配置"""
+    monkeypatch.setenv("LLM_MODEL", "gpt-4o")
+    monkeypatch.setenv("LLM_API_KEY", "test-key")
+    monkeypatch.setenv("LLM_BASE_URL", "https://custom.api.com/v1")
+    monkeypatch.setenv("LLM_TEMPERATURE", "0.3")
+    monkeypatch.setenv("LLM_MAX_TOKENS", "4096")
     provider = get_provider()
-    assert isinstance(provider, OpenAIProvider)
+    assert isinstance(provider, OpenAICompatibleProvider)
+    assert provider.model == "gpt-4o"
+    assert provider.api_key == "test-key"
+    assert provider.base_url == "https://custom.api.com/v1"
+    assert provider.temperature == 0.3
+    assert provider.max_tokens == 4096
