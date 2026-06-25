@@ -2,6 +2,7 @@ import type {
   RecordData, RecordCreate, RecordUpdate,
   AnalysisData, AnalysisRequest,
   CalendarDay, StatsData,
+  ProcessFeelingType,
 } from "./types";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
@@ -64,4 +65,61 @@ export const analysesApi = {
   list: () => request<AnalysisData[]>("/api/analyses"),
 
   get: (id: number) => request<AnalysisData>(`/api/analyses/${id}`),
+
+  stream: async (
+    data: AnalysisRequest,
+    onChunk: (text: string) => void,
+    onSuggestions: (suggestions: string[]) => void,
+    onDone: () => void,
+    onError: (err: string) => void,
+  ) => {
+    const response = await fetch(`${BASE_URL}/api/analyses/stream`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({ detail: "流式请求失败" }));
+      onError(err.detail || `HTTP ${response.status}`);
+      return;
+    }
+
+    const reader = response.body?.getReader();
+    if (!reader) {
+      onError("浏览器不支持流式读取");
+      return;
+    }
+
+    const decoder = new TextDecoder();
+    let buffer = "";
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split("\n");
+      buffer = lines.pop() || "";
+
+      for (const line of lines) {
+        if (line.startsWith("data: ")) {
+          try {
+            const payload = JSON.parse(line.slice(6));
+            if (payload.type === "summary_chunk") {
+              onChunk(payload.content);
+            } else if (payload.type === "suggestions") {
+              onSuggestions(payload.content);
+            } else if (payload.type === "done") {
+              onDone();
+            } else if (payload.type === "error") {
+              onError(payload.content);
+            }
+          } catch {
+            // 跳过无法解析的行
+          }
+        }
+      }
+    }
+  },
 };

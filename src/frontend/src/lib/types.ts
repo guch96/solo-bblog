@@ -4,6 +4,7 @@ export type ShapeType = "1" | "2" | "3" | "4" | "5" | "6" | "7";
 export type ColorType = "brown" | "dark_brown" | "yellow" | "green" | "black" | "red" | "other";
 export type SmellType = "normal" | "strong" | "odorless" | "other";
 export type ComfortType = "comfortable" | "bloating" | "pain" | "difficulty" | "other";
+export type ProcessFeelingType = "smooth" | "urgent" | "straining" | "incomplete" | "intermittent" | "normal" | "other";
 export type InputMode = "timer" | "manual";
 
 export interface RecordData {
@@ -15,6 +16,7 @@ export interface RecordData {
   color: ColorType | null;
   smell: SmellType | null;
   comfort: ComfortType | null;
+  process_feeling: ProcessFeelingType | null;
   notes: string | null;
   input_mode: InputMode;
   created_at: string;
@@ -29,6 +31,7 @@ export interface RecordCreate {
   color?: ColorType | null;
   smell?: SmellType | null;
   comfort?: ComfortType | null;
+  process_feeling?: ProcessFeelingType | null;
   notes?: string | null;
   input_mode: InputMode;
 }
@@ -41,6 +44,7 @@ export interface RecordUpdate {
   color?: ColorType | null;
   smell?: SmellType | null;
   comfort?: ComfortType | null;
+  process_feeling?: ProcessFeelingType | null;
   notes?: string | null;
   input_mode?: InputMode;
 }
@@ -71,6 +75,20 @@ export interface StatsData {
   frequency: { date: string; count: number }[];
   avg_duration: { date: string; avg_seconds: number }[];
   shape_distribution: { shape: string; count: number }[];
+  summary: StatsSummary | null;
+}
+
+export interface StatsSummary {
+  total_count: number;
+  this_week_count: number;
+  avg_duration_seconds: number;
+  most_common_shape: string | null;
+  most_common_shape_label: string | null;
+  abnormal_days: number;
+  avg_frequency_per_day: number;
+  longest_duration_seconds: number;
+  record_days: number;
+  streak_days: number;
 }
 
 // 枚举值显示映射
@@ -98,6 +116,16 @@ export const SMELL_LABELS: Record<SmellType, string> = {
   normal: "正常",
   strong: "偏臭",
   odorless: "无味",
+  other: "其他",
+};
+
+export const PROCESS_FEELING_LABELS: Record<ProcessFeelingType, string> = {
+  smooth: "顺畅",
+  urgent: "急迫",
+  straining: "费力",
+  incomplete: "便不尽感",
+  intermittent: "断断续续",
+  normal: "正常",
   other: "其他",
 };
 
