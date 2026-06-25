@@ -8,8 +8,16 @@ from database import engine, Base
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """应用生命周期：启动时建表"""
+    """应用生命周期：启动时建表，并兼容已有数据库的新增字段迁移"""
     Base.metadata.create_all(bind=engine)
+    # 兼容已有数据库：手动迁移 create_all() 不会添加的新列
+    with engine.connect() as conn:
+        cols = [row[1] for row in conn.exec_driver_sql("PRAGMA table_info(records)")]
+        if "process_feeling" not in cols:
+            conn.exec_driver_sql(
+                "ALTER TABLE records ADD COLUMN process_feeling VARCHAR(20)"
+            )
+            conn.commit()
     yield
 
 

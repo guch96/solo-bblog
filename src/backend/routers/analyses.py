@@ -103,7 +103,7 @@ def create_analysis_stream(body: AnalysisRequest, db: Session = Depends(get_db))
             analysis = Analysis(
                 date_from=datetime.fromisoformat(date_from),
                 date_to=datetime.fromisoformat(date_to),
-                provider="openai",
+                provider=provider.provider_name,
                 model=provider.model,
                 summary=summary,
                 suggestions=json.dumps(suggestions, ensure_ascii=False),
