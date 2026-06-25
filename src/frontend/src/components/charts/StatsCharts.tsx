@@ -98,7 +98,7 @@ export default function StatsCharts() {
       {/* 数据汇总卡片 */}
       <StatsSummaryCards data={data.summary} />
 
-      {/* 每日频率柱状图 */}
+      {/* 每日频率柱状图（增强版） */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-sm">
@@ -110,9 +110,15 @@ export default function StatsCharts() {
           {data.frequency.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-8">暂无数据</p>
           ) : (
-            <ResponsiveContainer width="100%" height={260}>
-              <BarChart data={data.frequency}>
-                <CartesianGrid strokeDasharray="3 3" stroke="oklch(0.90 0.02 80)" />
+            <ResponsiveContainer width="100%" height={280}>
+              <BarChart data={data.frequency} barCategoryGap="20%">
+                <defs>
+                  <linearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="var(--chart-1)" stopOpacity={0.9} />
+                    <stop offset="100%" stopColor="var(--chart-1)" stopOpacity={0.3} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="oklch(0.90 0.02 80)" vertical={false} />
                 <XAxis
                   dataKey="date"
                   tickFormatter={(v: string) => v.slice(5)}
@@ -126,8 +132,28 @@ export default function StatsCharts() {
                   axisLine={false}
                   tickLine={false}
                 />
-                <Tooltip labelFormatter={freqLabelFormatter} formatter={freqTooltipFormatter} />
-                <Bar dataKey="count" fill="var(--chart-1)" radius={[6, 6, 0, 0]} />
+                <Tooltip
+                  contentStyle={{
+                    background: "oklch(1 0 0 / 0.85)",
+                    backdropFilter: "blur(12px)",
+                    borderRadius: "12px",
+                    border: "1px solid oklch(0.90 0.02 80)",
+                    boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
+                    padding: "10px 14px",
+                  }}
+                  labelFormatter={freqLabelFormatter}
+                  formatter={freqTooltipFormatter}
+                  cursor={{ fill: "oklch(0.95 0.02 80)", radius: 8 }}
+                />
+                <Bar
+                  dataKey="count"
+                  fill="url(#barGradient)"
+                  radius={[8, 8, 0, 0]}
+                  maxBarSize={48}
+                  animationBegin={0}
+                  animationDuration={800}
+                  animationEasing="ease-out"
+                />
               </BarChart>
             </ResponsiveContainer>
           )}
@@ -161,7 +187,18 @@ export default function StatsCharts() {
                   axisLine={false}
                   tickLine={false}
                 />
-                <Tooltip labelFormatter={freqLabelFormatter} formatter={durationTooltipFormatter} />
+                <Tooltip
+                  contentStyle={{
+                    background: "oklch(1 0 0 / 0.85)",
+                    backdropFilter: "blur(12px)",
+                    borderRadius: "12px",
+                    border: "1px solid oklch(0.90 0.02 80)",
+                    boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
+                    padding: "10px 14px",
+                  }}
+                  labelFormatter={freqLabelFormatter}
+                  formatter={durationTooltipFormatter}
+                />
                 <Line
                   type="monotone"
                   dataKey="avg_seconds"
@@ -205,7 +242,17 @@ export default function StatsCharts() {
                     <Cell key={i} fill={`var(--chart-${(i % 5) + 1})`} />
                   ))}
                 </Pie>
-                <Tooltip formatter={pieTooltipFormatter} />
+                <Tooltip
+                  contentStyle={{
+                    background: "oklch(1 0 0 / 0.85)",
+                    backdropFilter: "blur(12px)",
+                    borderRadius: "12px",
+                    border: "1px solid oklch(0.90 0.02 80)",
+                    boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
+                    padding: "10px 14px",
+                  }}
+                  formatter={pieTooltipFormatter}
+                />
               </PieChart>
             </ResponsiveContainer>
           )}
