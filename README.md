@@ -6,11 +6,11 @@
 
 - **计时记录**：如厕时点击开始计时，停止后自动进入记录表单
 - **手动记录**：点击日历日期手动填写记录
-- **多维度记录**：形状（布里斯托分类法）、颜色、气味、身体感受、备注
+- **多维度记录**：形状（布里斯托分类法）、颜色、气味、身体感受、排便过程感受、备注
 - **每日多次**：支持一天记录多次
-- **数据可视化**：日历热力图、趋势统计图表
-- **AI 健康分析**：选择时间范围，AI 分析记录数据并给出健康建议
-- **多 LLM 支持**：自定义 Provider 抽象层，支持切换不同 LLM 厂商
+- **数据可视化**：日历热力图、汇总数据卡片、趋势统计图表（柱状图/折线图/饼图）
+- **AI 健康分析**：选择时间范围，AI 流式分析记录数据（SSE 打字机效果），给出健康建议
+- **多 LLM 支持**：OpenAI 兼容协议，支持 DeepSeek/Qwen/GLM 等任意厂商，通过 .env 配置切换
 
 ## 技术栈
 
@@ -49,11 +49,15 @@ npm run dev
 
 ### 环境变量
 
-复制 `.env.example` 为 `.env`，填入你的 API Key：
+复制 `.env.example` 为 `.env`，填入你的 LLM 配置：
 
 ```bash
-OPENAI_API_KEY=your_key_here
-LLM_PROVIDER=openai           # 默认 LLM 厂商（openai / claude）
+LLM_MODEL=gpt-4o-mini          # 模型名称
+LLM_API_KEY=sk-your-key-here   # API Key
+LLM_BASE_URL=https://api.openai.com/v1  # API 地址（支持任意 OpenAI 兼容厂商）
+LLM_TEMPERATURE=0.7            # 生成温度
+LLM_MAX_TOKENS=2048            # 最大 Token 数
+LLM_PROVIDER_NAME=openai       # 厂商标识名
 ```
 
 ## 项目结构

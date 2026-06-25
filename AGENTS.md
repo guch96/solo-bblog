@@ -90,9 +90,10 @@ These local instructions override default Superpowers workflows when they confli
 
 ## 7. 项目特定约束
 
-- **AI 分析模块**使用 OpenAI API，自定义 Provider 抽象层支持多 LLM 厂商切换
+- **AI 分析模块**使用 OpenAI 兼容协议（`OpenAICompatibleProvider`），通过 `.env` 配置 model/api_key/base_url/temperature/max_tokens/provider_name，支持 DeepSeek/Qwen/GLM 等任意厂商切换。流式输出使用 SSE（Server-Sent Events）
 - **代码注语言**：使用中文注释关键业务逻辑
 - **日志**：关键执行点添加 debug/info 日志，便于开发调试
+- **数据库迁移**：新增字段需在 `main.py` 的 `lifespan` 中添加 `PRAGMA table_info` + `ALTER TABLE` 兼容逻辑（SQLite 不支持生产级迁移工具）
 
 ---
 
