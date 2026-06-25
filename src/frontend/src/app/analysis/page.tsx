@@ -8,6 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { analysesApi } from "@/lib/api";
 import type { AnalysisData } from "@/lib/types";
 import AnalysisCard from "@/components/analysis/AnalysisCard";
+import StreamingAnalysisCard from "@/components/analysis/StreamingAnalysisCard";
 import { toast } from "sonner";
 import { Sparkles, Calendar } from "lucide-react";
 
@@ -20,6 +21,7 @@ export default function AnalysisPage() {
   });
   const [dateTo, setDateTo] = useState(today);
   const [analyzing, setAnalyzing] = useState(false);
+  const [streaming, setStreaming] = useState(false);
   const [analyses, setAnalyses] = useState<AnalysisData[]>([]);
 
   useEffect(() => {
@@ -41,6 +43,26 @@ export default function AnalysisPage() {
     } finally {
       setAnalyzing(false);
     }
+  };
+
+  const handleStreamAnalyze = async () => {
+    if (!dateFrom || !dateTo) {
+      toast.error("请选择时间范围");
+      return;
+    }
+    setStreaming(true);
+  };
+
+  const handleStreamDone = () => {
+    setStreaming(false);
+    // 流式完成后刷新分析列表
+    analysesApi.list().then(setAnalyses).catch(() => {});
+    toast.success("AI 分析完成！");
+  };
+
+  const handleStreamError = (err: string) => {
+    setStreaming(false);
+    toast.error(err);
   };
 
   return (
@@ -82,17 +104,27 @@ export default function AnalysisPage() {
               />
             </div>
             <Button
-              onClick={handleAnalyze}
-              disabled={analyzing}
+              onClick={handleStreamAnalyze}
+              disabled={analyzing || streaming}
               size="lg"
               className="gap-2 sm:shrink-0"
             >
               <Sparkles size={18} />
-              {analyzing ? "分析中..." : "开始分析"}
+              {analyzing || streaming ? "分析中..." : "开始分析"}
             </Button>
           </div>
         </CardContent>
       </Card>
+
+      {/* 流式分析输出 */}
+      {streaming && (
+        <StreamingAnalysisCard
+          dateFrom={dateFrom}
+          dateTo={dateTo}
+          onComplete={handleStreamDone}
+          onError={handleStreamError}
+        />
+      )}
 
       {/* 历史分析列表 */}
       <div className="space-y-4">
