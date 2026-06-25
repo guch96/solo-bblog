@@ -62,24 +62,42 @@ LLM_PROVIDER=openai           # 默认 LLM 厂商（openai / claude）
 solo-bblog/
 ├─ README.md              # 本文件
 ├─ JOURNAL.md             # 开发日志
-├─ AGENTS.md              # 项目概述 + 行为约束（通用）
+├─ AGENTS.md              # 项目概述 + 行为约束
 ├─ CLAUDE.md              # Claude Code 专属配置
 ├─ .claude/               # CC skills/hooks/commands
 ├─ src/
 │  ├─ frontend/           # Next.js 前端
 │  │  ├─ src/
-│  │  │  ├─ app/          # Next.js App Router
+│  │  │  ├─ app/          # App Router 页面（首页/记录/日历/统计/AI分析）
 │  │  │  ├─ components/   # React 组件
-│  │  │  └─ lib/          # 工具函数
+│  │  │  │  ├─ ui/        # shadcn/ui 基础组件
+│  │  │  │  ├─ nav/       # 导航组件
+│  │  │  │  ├─ timer/     # 计时器
+│  │  │  │  ├─ records/   # 记录表单/卡片/列表
+│  │  │  │  ├─ calendar/  # 日历热力图
+│  │  │  │  ├─ charts/    # 统计图表
+│  │  │  │  └─ analysis/  # AI 分析卡片
+│  │  │  ├─ hooks/        # 自定义 Hooks
+│  │  │  └─ lib/          # API 客户端、类型定义、工具函数
+│  │  ├─ public/          # 静态资源
 │  │  └─ package.json
 │  └─ backend/            # FastAPI 后端
-│     ├─ main.py          # 入口
-│     ├─ models.py        # 数据模型
-│     ├─ routers/         # API 路由
-│     ├─ services/        # 业务逻辑
+│     ├─ main.py          # 应用入口
+│     ├─ database.py      # 数据库连接
+│     ├─ models.py        # SQLAlchemy 数据模型
+│     ├─ schemas.py       # Pydantic 请求/响应模型
+│     ├─ routers/         # API 路由（records、analyses）
+│     ├─ services/        # 业务逻辑 + LLM Provider 抽象层
+│     ├─ tests/           # 后端测试
+│     ├─ utils/           # 工具函数
+│     ├─ data/            # SQLite 数据文件
 │     ├─ pyproject.toml   # uv 依赖配置
 │     └─ uv.lock          # 锁定依赖版本
-└─ docs/                  # 设计文档
+└─ docs/
+   ├─ frontend-design/    # 前端设计系统文档
+   └─ superpowers/
+      ├─ plans/           # 实施计划
+      └─ specs/           # 设计规格文档
 ```
 
 ## 解决的问题

@@ -112,13 +112,55 @@ These local instructions override default Superpowers workflows when they confli
 **目录结构：**
 ```
 solo-bblog/
-├─ README.md          # 项目说明
-├─ JOURNAL.md         # 开发日志
-├─ AGENTS.md          # 行为约束
-├─ CLAUDE.md          # Claude Code 配置
-├─ .claude/           # CC skills/hooks/commands
+├─ README.md
+├─ JOURNAL.md
+├─ AGENTS.md
+├─ CLAUDE.md
+├─ .claude/
 ├─ src/
-│  ├─ frontend/       # Next.js 前端
-│  └─ backend/        # FastAPI 后端
-└─ docs/              # 设计文档
+│  ├─ frontend/                  # Next.js 前端
+│  │  ├─ src/
+│  │  │  ├─ app/                 # App Router 页面
+│  │  │  │  ├─ analysis/         # AI 分析页
+│  │  │  │  ├─ calendar/         # 日历视图页
+│  │  │  │  ├─ records/          # 记录 CRUD 页
+│  │  │  │  │  ├─ [id]/          # 记录详情
+│  │  │  │  │  │  └─ edit/       # 编辑记录
+│  │  │  │  │  └─ new/           # 新增记录
+│  │  │  │  └─ stats/            # 统计图表页
+│  │  │  ├─ components/          # 组件
+│  │  │  │  ├─ ui/               # shadcn/ui 基础组件
+│  │  │  │  ├─ nav/              # 导航组件（桌面/移动端）
+│  │  │  │  ├─ timer/            # 计时器组件
+│  │  │  │  ├─ records/          # 记录相关组件
+│  │  │  │  ├─ calendar/         # 日历热力图组件
+│  │  │  │  ├─ charts/           # 统计图表组件
+│  │  │  │  └─ analysis/         # AI 分析卡片组件
+│  │  │  ├─ hooks/               # 自定义 Hooks
+│  │  │  └─ lib/                 # 工具函数、API 客户端、类型定义
+│  │  ├─ public/                 # 静态资源
+│  │  ├─ package.json
+│  │  └─ tsconfig.json
+│  └─ backend/                   # FastAPI 后端
+│     ├─ main.py                 # 入口
+│     ├─ database.py             # 数据库连接
+│     ├─ models.py               # SQLAlchemy 模型
+│     ├─ schemas.py              # Pydantic 请求/响应模型
+│     ├─ routers/
+│     │  ├─ records.py           # 记录 API
+│     │  └─ analyses.py          # 分析 API
+│     ├─ services/
+│     │  ├─ record_service.py    # 记录业务逻辑
+│     │  ├─ analysis_service.py  # 分析业务逻辑
+│     │  └─ llm_provider.py      # LLM Provider 抽象层
+│     ├─ tests/                  # 后端测试
+│     ├─ utils/                  # 后端工具
+│     ├─ data/                   # SQLite 数据文件
+│     ├─ pyproject.toml
+│     └─ uv.lock
+└─ docs/
+   ├─ frontend-design/           # 前端设计系统文档
+   └─ superpowers/
+      ├─ plans/                  # 实施计划
+      └─ specs/                  # 设计规格文档
 ```

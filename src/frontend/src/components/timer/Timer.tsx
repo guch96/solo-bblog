@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { Play, Square } from "lucide-react";
 
 export default function Timer() {
   const router = useRouter();
@@ -10,6 +11,11 @@ export default function Timer() {
   const [seconds, setSeconds] = useState(0);
   const startTimeRef = useRef<string | null>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const start = useCallback(() => {
     setIsRunning(true);
@@ -39,27 +45,72 @@ export default function Timer() {
     return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
   };
 
-  return (
-    <div className="flex flex-col items-center gap-6 py-12">
-      <div className="text-6xl font-mono font-bold tabular-nums">
-        {formatTime(seconds)}
+  if (!mounted) {
+    return (
+      <div className="flex flex-col items-center gap-6 py-10">
+        <div className="text-5xl sm:text-6xl font-bold tabular-nums text-muted-foreground/30">
+          00:00
+        </div>
+        <Button size="xl" className="gap-2 min-w-[140px] opacity-50" disabled>
+          <Play size={22} />
+          开始
+        </Button>
       </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col items-center gap-6 py-8 sm:py-10">
+      {/* 计时器数字 */}
+      <div className="relative">
+        {/* 背景光环 */}
+        <div
+          className={`absolute inset-0 rounded-full blur-3xl transition-all duration-700 ${
+            isRunning
+              ? "bg-primary/20 scale-150 animate-pulse"
+              : "bg-primary/5 scale-100"
+          }`}
+        />
+        {/* 时间显示 */}
+        <div
+          className={`relative text-5xl sm:text-6xl font-bold tabular-nums tracking-tight transition-colors duration-300 ${
+            isRunning ? "text-primary" : "text-foreground"
+          }`}
+        >
+          {formatTime(seconds)}
+        </div>
+      </div>
+
+      {/* 状态标签 */}
+      <div
+        className={`text-xs font-medium px-3 py-1 rounded-full transition-all duration-300 ${
+          isRunning
+            ? "bg-primary/10 text-primary"
+            : "bg-muted text-muted-foreground"
+        }`}
+      >
+        {isRunning ? "正在记录中..." : "准备开始记录"}
+      </div>
+
+      {/* 按钮 */}
       {isRunning ? (
         <Button
-          size="lg"
+          size="xl"
           variant="destructive"
           onClick={stop}
-          className="h-16 w-32 text-lg"
+          className="gap-2 min-w-[140px] animate-fade-in"
         >
-          停止
+          <Square size={20} />
+          停止记录
         </Button>
       ) : (
         <Button
-          size="lg"
+          size="xl"
           onClick={start}
-          className="h-16 w-32 text-lg"
+          className="gap-2 min-w-[140px] animate-pulse-ring animate-fade-in"
         >
-          开始
+          <Play size={22} />
+          开始记录
         </Button>
       )}
     </div>

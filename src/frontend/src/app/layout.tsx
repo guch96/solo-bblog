@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { Toaster } from "@/components/ui/sonner";
+import BottomNav from "@/components/nav/BottomNav";
+import DesktopNav from "@/components/nav/DesktopNav";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -8,37 +9,23 @@ export const metadata: Metadata = {
   description: "记录每日如厕情况，AI 分析健康建议",
 };
 
-const navItems = [
-  { href: "/", label: "首页" },
-  { href: "/records", label: "记录" },
-  { href: "/calendar", label: "日历" },
-  { href: "/stats", label: "统计" },
-  { href: "/analysis", label: "AI 分析" },
-];
-
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="zh-CN">
-      <body className="min-h-screen bg-background antialiased">
-        <header className="border-b sticky top-0 bg-background/95 backdrop-blur z-50">
-          <nav className="container max-w-2xl mx-auto flex items-center gap-6 h-14">
-            <Link href="/" className="font-bold text-lg">
-              PoopTracker
-            </Link>
-            <div className="flex gap-4 text-sm">
-              {navItems.map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className="text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  {item.label}
-                </Link>
-              ))}
-            </div>
-          </nav>
-        </header>
-        <main>{children}</main>
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap"
+          rel="stylesheet"
+        />
+      </head>
+      <body className="min-h-screen bg-background text-foreground antialiased pb-20 md:pb-0">
+        <DesktopNav />
+        <main className="container max-w-2xl mx-auto px-5 py-6 md:py-8">
+          {children}
+        </main>
+        <BottomNav />
         <Toaster />
       </body>
     </html>

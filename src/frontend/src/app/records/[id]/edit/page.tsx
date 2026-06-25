@@ -5,7 +5,6 @@ import { useParams } from "next/navigation";
 import RecordForm from "@/components/records/RecordForm";
 import { recordsApi } from "@/lib/api";
 import type { RecordData } from "@/lib/types";
-import { toast } from "sonner";
 
 export default function EditRecordPage() {
   const params = useParams();
@@ -16,21 +15,33 @@ export default function EditRecordPage() {
     recordsApi
       .get(Number(params.id))
       .then(setRecord)
-      .catch(() => toast.error("加载记录失败"))
+      .catch(() => {})
       .finally(() => setLoading(false));
   }, [params.id]);
 
   if (loading) {
-    return <p className="text-center text-muted-foreground py-12">加载中...</p>;
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+          <span className="text-sm text-muted-foreground">加载中...</span>
+        </div>
+      </div>
+    );
   }
 
   if (!record) {
-    return <p className="text-center text-muted-foreground py-12">记录不存在</p>;
+    return (
+      <div className="flex flex-col items-center justify-center py-20 gap-3">
+        <span className="text-4xl">🔍</span>
+        <p className="text-sm text-muted-foreground">记录不存在</p>
+      </div>
+    );
   }
 
   return (
-    <div className="container max-w-lg mx-auto py-8 space-y-6">
-      <h1 className="text-2xl font-bold">编辑记录</h1>
+    <div>
+      <h1 className="text-xl font-bold mb-6">编辑记录</h1>
       <RecordForm record={record} />
     </div>
   );

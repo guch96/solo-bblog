@@ -4,10 +4,12 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Card, CardContent } from "@/components/ui/card";
 import { analysesApi } from "@/lib/api";
 import type { AnalysisData } from "@/lib/types";
 import AnalysisCard from "@/components/analysis/AnalysisCard";
 import { toast } from "sonner";
+import { Sparkles, Calendar } from "lucide-react";
 
 export default function AnalysisPage() {
   const today = new Date().toISOString().slice(0, 10);
@@ -42,34 +44,67 @@ export default function AnalysisPage() {
   };
 
   return (
-    <div className="container max-w-2xl mx-auto py-8 space-y-8">
-      <h1 className="text-2xl font-bold">AI 健康分析</h1>
+    <div className="space-y-8 animate-fade-in-up">
+      <div>
+        <h1 className="text-xl font-bold flex items-center gap-2">
+          <Sparkles size={22} className="text-accent" />
+          AI 健康分析
+        </h1>
+        <p className="text-sm text-muted-foreground mt-1">基于你的记录数据，AI 提供肠道健康评估</p>
+      </div>
 
       {/* 分析触发区域 */}
-      <div className="border rounded-lg p-6 space-y-4">
-        <p className="text-sm text-muted-foreground">
-          选择一段时间范围，AI 将分析该范围内的所有记录，给出肠道健康评估和建议。
-        </p>
-        <div className="flex items-end gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="date_from">起始日期</Label>
-            <Input id="date_from" type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
+      <Card>
+        <CardContent className="p-5 space-y-4">
+          <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+            <Calendar size={16} />
+            选择分析范围
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="date_to">结束日期</Label>
-            <Input id="date_to" type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-end gap-3">
+            <div className="flex-1 space-y-1.5">
+              <Label htmlFor="date_from" className="text-xs">起始日期</Label>
+              <Input
+                id="date_from"
+                type="date"
+                value={dateFrom}
+                onChange={(e) => setDateFrom(e.target.value)}
+                className="rounded-xl"
+              />
+            </div>
+            <div className="flex-1 space-y-1.5">
+              <Label htmlFor="date_to" className="text-xs">结束日期</Label>
+              <Input
+                id="date_to"
+                type="date"
+                value={dateTo}
+                onChange={(e) => setDateTo(e.target.value)}
+                className="rounded-xl"
+              />
+            </div>
+            <Button
+              onClick={handleAnalyze}
+              disabled={analyzing}
+              size="lg"
+              className="gap-2 sm:shrink-0"
+            >
+              <Sparkles size={18} />
+              {analyzing ? "分析中..." : "开始分析"}
+            </Button>
           </div>
-          <Button onClick={handleAnalyze} disabled={analyzing}>
-            {analyzing ? "分析中..." : "开始分析"}
-          </Button>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
 
       {/* 历史分析列表 */}
       <div className="space-y-4">
-        <h2 className="text-xl font-semibold">历史分析</h2>
+        <h2 className="text-lg font-bold">历史分析</h2>
         {analyses.length === 0 ? (
-          <p className="text-center text-muted-foreground py-8">暂无分析记录</p>
+          <Card className="border-dashed">
+            <CardContent className="flex flex-col items-center justify-center py-12 gap-3">
+              <span className="text-5xl">🤖</span>
+              <p className="text-sm text-muted-foreground">暂无分析记录</p>
+              <p className="text-xs text-muted-foreground/70">选择时间范围，让 AI 为你分析肠道健康趋势</p>
+            </CardContent>
+          </Card>
         ) : (
           analyses.map((a) => <AnalysisCard key={a.id} analysis={a} />)
         )}

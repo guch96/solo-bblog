@@ -4,12 +4,12 @@ import { useState, useEffect } from "react";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   LineChart, Line,
-  PieChart, Pie, Cell, Legend,
+  PieChart, Pie, Cell,
 } from "recharts";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { recordsApi } from "@/lib/api";
 import { SHAPE_LABELS, type StatsData, type ShapeType } from "@/lib/types";
 
-const COLORS = ["#f87171", "#fb923c", "#fbbf24", "#34d399", "#60a5fa", "#a78bfa", "#f472b6"];
 
 export default function StatsCharts() {
   const [days, setDays] = useState(7);
@@ -26,21 +26,32 @@ export default function StatsCharts() {
   }, [days]);
 
   if (loading) {
-    return <p className="text-center text-muted-foreground py-12">加载中...</p>;
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+          <span className="text-sm text-muted-foreground">加载中...</span>
+        </div>
+      </div>
+    );
   }
 
   if (!data) {
-    return <p className="text-center text-muted-foreground py-12">暂无统计数据</p>;
+    return (
+      <Card className="border-dashed">
+        <CardContent className="flex flex-col items-center justify-center py-16 gap-3">
+          <span className="text-5xl">📊</span>
+          <p className="text-sm text-muted-foreground">暂无统计数据</p>
+          <p className="text-xs text-muted-foreground/70">记录更多数据后会显示统计图表</p>
+        </CardContent>
+      </Card>
+    );
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const freqLabelFormatter = (v: any) => String(v ?? "");
+  const freqLabelFormatter = (v: unknown) => String(v ?? "");
+  const freqTooltipFormatter = (value: unknown) => [`${value} 次`, "记录次数"];
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const freqTooltipFormatter = (value: any) => [`${value} 次`, "记录次数"];
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const durationTooltipFormatter = (value: any) => {
+  const durationTooltipFormatter = (value: unknown) => {
     const v = Number(value ?? 0);
     const m = Math.floor(v / 60);
     const s = Math.round(v % 60);
@@ -49,88 +60,153 @@ export default function StatsCharts() {
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const pieLabelRenderer = (props: any) => {
-    const s = props.shape ?? props.payload?.shape;
-    return `${SHAPE_LABELS[s as ShapeType]?.split("（")[0] || s} (${props.count ?? props.payload?.count})`;
+    const s = (props.shape ?? props.payload?.shape ?? "") as string;
+    return SHAPE_LABELS[s as ShapeType]?.split("（")[0] || s || "";
   };
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const pieTooltipFormatter = (value: any, _name: any, entry: any) => {
-    const shape = entry?.payload?.shape;
-    return [`${value} 次`, SHAPE_LABELS[shape as ShapeType] || shape];
+  const pieTooltipFormatter = (value: unknown, _name: unknown, entry: unknown) => {
+    const shape = (entry as Record<string, unknown>)?.payload as Record<string, unknown> | undefined;
+    return [`${value} 次`, SHAPE_LABELS[(shape?.shape ?? "") as ShapeType] || ""];
   };
+
+  const rangeOptions = [
+    { value: 7, label: "7 天" },
+    { value: 14, label: "14 天" },
+    { value: 30, label: "30 天" },
+  ];
 
   return (
-    <div className="space-y-8">
-      <div className="flex items-center gap-2">
-        <span className="text-sm text-muted-foreground">统计范围：</span>
-        {[7, 14, 30].map((d) => (
+    <div className="space-y-6 animate-fade-in-up">
+      {/* 范围选择 */}
+      <div className="flex items-center gap-1.5 bg-muted/50 p-1 rounded-full w-fit">
+        {rangeOptions.map((opt) => (
           <button
-            key={d}
-            onClick={() => setDays(d)}
-            className={`px-3 py-1 text-sm rounded border transition-colors ${
-              days === d ? "bg-primary text-primary-foreground" : "hover:bg-accent"
+            key={opt.value}
+            onClick={() => setDays(opt.value)}
+            className={`px-4 py-1.5 text-sm rounded-full font-medium transition-all duration-200 ${
+              days === opt.value
+                ? "bg-card text-foreground shadow-sm ring-1 ring-border/30"
+                : "text-muted-foreground hover:text-foreground"
             }`}
           >
-            {d} 天
+            {opt.label}
           </button>
         ))}
       </div>
 
-      {/* 频率柱状图 */}
-      <div>
-        <h3 className="text-lg font-semibold mb-4">每日记录次数</h3>
-        {data.frequency.length === 0 ? (
-          <p className="text-sm text-muted-foreground">暂无数据</p>
-        ) : (
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={data.frequency}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="date" tickFormatter={(v: string) => v.slice(5)} />
-              <YAxis allowDecimals={false} />
-              <Tooltip labelFormatter={freqLabelFormatter} formatter={freqTooltipFormatter} />
-              <Bar dataKey="count" fill="#34d399" radius={[4, 4, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        )}
-      </div>
+      {/* 每日频率柱状图 */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-sm">
+            <span className="w-2 h-2 rounded-full bg-chart-1" />
+            每日记录次数
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {data.frequency.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-8">暂无数据</p>
+          ) : (
+            <ResponsiveContainer width="100%" height={260}>
+              <BarChart data={data.frequency}>
+                <CartesianGrid strokeDasharray="3 3" stroke="oklch(0.90 0.02 80)" />
+                <XAxis
+                  dataKey="date"
+                  tickFormatter={(v: string) => v.slice(5)}
+                  tick={{ fontSize: 12, fill: "oklch(0.5 0.03 70)" }}
+                  axisLine={false}
+                  tickLine={false}
+                />
+                <YAxis
+                  allowDecimals={false}
+                  tick={{ fontSize: 12, fill: "oklch(0.5 0.03 70)" }}
+                  axisLine={false}
+                  tickLine={false}
+                />
+                <Tooltip labelFormatter={freqLabelFormatter} formatter={freqTooltipFormatter} />
+                <Bar dataKey="count" fill="var(--chart-1)" radius={[6, 6, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          )}
+        </CardContent>
+      </Card>
 
       {/* 时长趋势折线图 */}
-      <div>
-        <h3 className="text-lg font-semibold mb-4">每日平均时长（秒）</h3>
-        {data.avg_duration.length === 0 ? (
-          <p className="text-sm text-muted-foreground">暂无数据</p>
-        ) : (
-          <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={data.avg_duration}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="date" tickFormatter={(v: string) => v.slice(5)} />
-              <YAxis />
-              <Tooltip labelFormatter={freqLabelFormatter} formatter={durationTooltipFormatter} />
-              <Line type="monotone" dataKey="avg_seconds" stroke="#60a5fa" strokeWidth={2} dot={{ fill: "#60a5fa" }} />
-            </LineChart>
-          </ResponsiveContainer>
-        )}
-      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-sm">
+            <span className="w-2 h-2 rounded-full bg-chart-3" />
+            每日平均时长
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {data.avg_duration.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-8">暂无数据</p>
+          ) : (
+            <ResponsiveContainer width="100%" height={260}>
+              <LineChart data={data.avg_duration}>
+                <CartesianGrid strokeDasharray="3 3" stroke="oklch(0.90 0.02 80)" />
+                <XAxis
+                  dataKey="date"
+                  tickFormatter={(v: string) => v.slice(5)}
+                  tick={{ fontSize: 12, fill: "oklch(0.5 0.03 70)" }}
+                  axisLine={false}
+                  tickLine={false}
+                />
+                <YAxis
+                  tick={{ fontSize: 12, fill: "oklch(0.5 0.03 70)" }}
+                  axisLine={false}
+                  tickLine={false}
+                />
+                <Tooltip labelFormatter={freqLabelFormatter} formatter={durationTooltipFormatter} />
+                <Line
+                  type="monotone"
+                  dataKey="avg_seconds"
+                  stroke="var(--chart-3)"
+                  strokeWidth={2.5}
+                  dot={{ fill: "var(--chart-3)", r: 4, strokeWidth: 0 }}
+                  activeDot={{ r: 6, fill: "var(--chart-3)", stroke: "var(--card)", strokeWidth: 2 }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          )}
+        </CardContent>
+      </Card>
 
       {/* 形状分布饼图 */}
-      <div>
-        <h3 className="text-lg font-semibold mb-4">布里斯托分类分布</h3>
-        {data.shape_distribution.length === 0 ? (
-          <p className="text-sm text-muted-foreground">暂无数据</p>
-        ) : (
-          <ResponsiveContainer width="100%" height={350}>
-            <PieChart>
-              <Pie data={data.shape_distribution} dataKey="count" nameKey="shape" cx="50%" cy="50%" outerRadius={120} label={pieLabelRenderer}>
-                {data.shape_distribution.map((_, i) => (
-                  <Cell key={i} fill={COLORS[i % COLORS.length]} />
-                ))}
-              </Pie>
-              <Tooltip formatter={pieTooltipFormatter} />
-              <Legend />
-            </PieChart>
-          </ResponsiveContainer>
-        )}
-      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-sm">
+            <span className="w-2 h-2 rounded-full bg-chart-5" />
+            布里斯托分类分布
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {data.shape_distribution.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-8">暂无数据</p>
+          ) : (
+            <ResponsiveContainer width="100%" height={320}>
+              <PieChart>
+                <Pie
+                  data={data.shape_distribution}
+                  dataKey="count"
+                  nameKey="shape"
+                  cx="50%"
+                  cy="50%"
+                  outerRadius={110}
+                  innerRadius={50}
+                  label={pieLabelRenderer}
+                  labelLine={{ stroke: "oklch(0.5 0.03 70)", strokeWidth: 1 }}
+                >
+                  {data.shape_distribution.map((_, i) => (
+                    <Cell key={i} fill={`var(--chart-${(i % 5) + 1})`} />
+                  ))}
+                </Pie>
+                <Tooltip formatter={pieTooltipFormatter} />
+              </PieChart>
+            </ResponsiveContainer>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
