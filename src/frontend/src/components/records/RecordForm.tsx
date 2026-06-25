@@ -8,9 +8,9 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { recordsApi } from "@/lib/api";
 import {
-  SHAPE_LABELS, COLOR_LABELS, SMELL_LABELS, COMFORT_LABELS,
+  SHAPE_LABELS, COLOR_LABELS, SMELL_LABELS, COMFORT_LABELS, PROCESS_FEELING_LABELS,
   type RecordCreate, type RecordData, type InputMode,
-  type ShapeType, type ColorType, type SmellType, type ComfortType,
+  type ShapeType, type ColorType, type SmellType, type ComfortType, type ProcessFeelingType,
 } from "@/lib/types";
 import { toast } from "sonner";
 import { ArrowLeft, Save } from "lucide-react";
@@ -58,6 +58,17 @@ const COMFORT_OPTIONS: { key: ComfortType; emoji: string; label: string; desc: s
   { key: "other", emoji: "🤷", label: "其他", desc: "其他感受" },
 ];
 
+// 排便过程感受配置：表情 + 标签
+const PROCESS_FEELING_OPTIONS: { key: ProcessFeelingType; emoji: string; label: string; desc: string }[] = [
+  { key: "smooth", emoji: "💨", label: "顺畅", desc: "一气呵成" },
+  { key: "urgent", emoji: "🏃", label: "急迫", desc: "突然急需" },
+  { key: "straining", emoji: "💪", label: "费力", desc: "需要用力" },
+  { key: "incomplete", emoji: "🔄", label: "便不尽感", desc: "排不干净" },
+  { key: "intermittent", emoji: "⏸", label: "断断续续", desc: "时断时续" },
+  { key: "normal", emoji: "👌", label: "正常", desc: "没有特别" },
+  { key: "other", emoji: "🤷", label: "其他", desc: "其他感受" },
+];
+
 const sectionClass = "bg-card rounded-xl p-4 space-y-3 ring-1 ring-border/30";
 const sectionTitleClass = "text-sm font-semibold text-muted-foreground flex items-center gap-1.5";
 
@@ -84,6 +95,7 @@ export default function RecordForm({ record }: Props) {
     color: string;
     smell: string;
     comfort: string;
+    process_feeling: string;
     notes: string;
     input_mode: string;
   }
@@ -96,6 +108,7 @@ export default function RecordForm({ record }: Props) {
     color: record?.color ?? "",
     smell: record?.smell ?? "",
     comfort: record?.comfort ?? "",
+    process_feeling: record?.process_feeling ?? "",
     notes: record?.notes ?? "",
     input_mode: record?.input_mode ?? timerData?.input_mode ?? "manual",
   });
@@ -117,6 +130,7 @@ export default function RecordForm({ record }: Props) {
         color: (form.color as RecordCreate["color"]) || null,
         smell: (form.smell as RecordCreate["smell"]) || null,
         comfort: (form.comfort as RecordCreate["comfort"]) || null,
+        process_feeling: (form.process_feeling as RecordCreate["process_feeling"]) || null,
         notes: form.notes || null,
         input_mode: form.input_mode as InputMode,
       };
@@ -330,6 +344,50 @@ export default function RecordForm({ record }: Props) {
                 <span className="text-2xl leading-none">{opt.emoji}</span>
                 <span className={`text-xs font-semibold ${selected ? "text-primary" : "text-foreground"}`}>
                   {opt.label}
+                </span>
+                {selected && (
+                  <span className="absolute top-1 right-1 w-4 h-4 rounded-full bg-primary flex items-center justify-center">
+                    <svg className="w-2.5 h-2.5 text-primary-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* 排便过程感受 — 卡片选择器 */}
+      <div className={sectionClass}>
+        <h3 className={sectionTitleClass}>
+          <span>🚽</span> 排便过程感受
+        </h3>
+        <p className="text-xs text-muted-foreground -mt-1">
+          选择最接近本次排便过程的体验
+        </p>
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+          {PROCESS_FEELING_OPTIONS.map((opt) => {
+            const selected = form.process_feeling === opt.key;
+            return (
+              <button
+                key={opt.key}
+                type="button"
+                onClick={() => setForm({ ...form, process_feeling: selected ? "" : opt.key })}
+                className={`relative flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all duration-200 cursor-pointer select-none
+                  ${selected
+                    ? "border-primary bg-primary/5 shadow-md shadow-primary/10 -translate-y-0.5"
+                    : "border-transparent bg-muted/30 hover:bg-muted/60 hover:border-muted-foreground/20"
+                  }
+                  active:scale-[0.96]
+                `}
+              >
+                <span className="text-2xl leading-none">{opt.emoji}</span>
+                <span className={`text-xs font-semibold ${selected ? "text-primary" : "text-foreground"}`}>
+                  {opt.label}
+                </span>
+                <span className="text-[10px] text-muted-foreground leading-tight text-center">
+                  {opt.desc}
                 </span>
                 {selected && (
                   <span className="absolute top-1 right-1 w-4 h-4 rounded-full bg-primary flex items-center justify-center">
