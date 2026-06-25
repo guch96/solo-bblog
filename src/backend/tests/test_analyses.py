@@ -92,3 +92,40 @@ def test_analysis_no_records(client):
         "date_to": "2026-06-24",
     })
     assert resp.status_code == 400
+
+
+def test_analysis_stream_sse_format(client):
+    """测试流式分析返回 SSE 格式数据"""
+    client.post("/api/records", json={
+        "start_time": "2026-06-24T08:00:00",
+        "input_mode": "timer",
+    })
+
+    mock_provider = MagicMock()
+    mock_provider.model = "mock-model"
+    mock_provider.analyze_stream.return_value = iter([
+        'data: {"type":"summary_chunk","content":"mock 摘要内容"}\n\n',
+        'data: {"type":"suggestions","content":["建议1","建议2"]}\n\n',
+        'data: {"type":"done"}\n\n',
+    ])
+
+    with patch("routers.analyses.get_provider", return_value=mock_provider):
+        resp = client.post("/api/analyses/stream", json={
+            "date_from": "2026-06-24",
+            "date_to": "2026-06-24",
+        })
+
+    assert resp.status_code == 200
+    assert "text/event-stream" in resp.headers["content-type"]
+    body = resp.text
+    assert 'data: {"type":"summary_chunk"' in body
+    assert 'data: {"type":"done"}' in body
+
+
+def test_analysis_stream_no_records(client):
+    """测试流式分析无记录时返回 400"""
+    resp = client.post("/api/analyses/stream", json={
+        "date_from": "2026-06-24",
+        "date_to": "2026-06-24",
+    })
+    assert resp.status_code == 400
