@@ -48,3 +48,32 @@ def test_stats_data(client):
     shapes = {s["shape"]: s["count"] for s in data["shape_distribution"]}
     assert shapes["4"] == 2
     assert shapes["3"] == 1
+
+
+def test_stats_summary_fields(client):
+    """测试统计数据中的 summary 汇总字段"""
+    records = [
+        {"start_time": "2026-06-20T08:00:00", "duration": 300, "shape": "4", "color": "brown", "input_mode": "timer"},
+        {"start_time": "2026-06-23T09:00:00", "duration": 180, "shape": "3", "color": "brown", "input_mode": "manual"},
+        {"start_time": "2026-06-24T10:00:00", "duration": 600, "shape": "4", "color": "brown", "input_mode": "timer"},
+    ]
+    for r in records:
+        client.post("/api/records", json=r)
+
+    resp = client.get("/api/records/stats?days=7")
+    assert resp.status_code == 200
+    data = resp.json()
+    summary = data["summary"]
+
+    assert summary is not None
+    assert summary["total_count"] == 3
+    assert summary["avg_duration_seconds"] > 0
+    assert summary["most_common_shape"] == "4"
+    assert summary["most_common_shape_label"] is not None
+    assert summary["record_days"] > 0
+    assert "total_count" in summary
+    assert "this_week_count" in summary
+    assert "avg_frequency_per_day" in summary
+    assert "longest_duration_seconds" in summary
+    assert "streak_days" in summary
+    assert "abnormal_days" in summary

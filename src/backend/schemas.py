@@ -137,3 +137,4 @@ class StatsResponse(BaseModel):
     frequency: list[dict]
     avg_duration: list[dict]
     shape_distribution: list[dict]
+    summary: dict | None = None

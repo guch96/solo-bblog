@@ -140,8 +140,102 @@ def get_stats(db: Session, days: int) -> dict:
         .all()
     )
 
+    # ---- 汇总统计（9个指标） ----
+    total_count = (
+        db.query(func.count(Record.id))
+        .filter(Record.start_time >= cutoff)
+        .scalar()
+    )
+
+    # 本周次数
+    now = datetime.now(timezone.utc)
+    week_start = now - timedelta(days=now.weekday())
+    week_start = week_start.replace(hour=0, minute=0, second=0, microsecond=0)
+    this_week_count = (
+        db.query(func.count(Record.id))
+        .filter(Record.start_time >= week_start)
+        .scalar()
+    )
+
+    # 全局平均时长
+    avg_dur_row = (
+        db.query(func.avg(Record.duration))
+        .filter(Record.start_time >= cutoff, Record.duration.isnot(None))
+        .scalar()
+    )
+    avg_duration_seconds = round(avg_dur_row, 1) if avg_dur_row else 0
+
+    # 最常见形状
+    most_common = (
+        db.query(Record.shape, func.count(Record.id).label("cnt"))
+        .filter(Record.shape.isnot(None), Record.start_time >= cutoff)
+        .group_by(Record.shape)
+        .order_by(func.count(Record.id).desc())
+        .first()
+    )
+
+    # 形状中文标签映射
+    shape_labels = {"1": "硬块状", "2": "香肠状", "3": "条状裂纹", "4": "光滑条状", "5": "软团状", "6": "糊状", "7": "水样状"}
+
+    # 异常天数（颜色非棕色 或 形状为 1/2/6/7）
+    abnormal_days = (
+        db.query(func.count(func.distinct(func.date(Record.start_time))))
+        .filter(
+            Record.start_time >= cutoff,
+            (Record.color.isnot(None) & (Record.color != "brown"))
+            | (Record.shape.in_(["1", "2", "6", "7"])),
+        )
+        .scalar()
+    ) or 0
+
+    # 有记录的天数
+    record_days = len(frequency) if frequency else 0
+
+    # 日均频率
+    avg_frequency_per_day = round(total_count / days, 1) if days > 0 else 0
+
+    # 最长单次时长
+    longest_row = (
+        db.query(func.max(Record.duration))
+        .filter(Record.start_time >= cutoff, Record.duration.isnot(None))
+        .scalar()
+    )
+    longest_duration_seconds = round(longest_row, 1) if longest_row else 0
+
+    # 最长连续打卡天数
+    record_dates = [r.date for r in frequency]
+    streak_days = 0
+    if record_dates:
+        from datetime import date as date_type
+        streak_days = 1
+        max_streak = 1
+        sorted_dates = sorted(record_dates)
+        for i in range(1, len(sorted_dates)):
+            prev = datetime.strptime(sorted_dates[i - 1], "%Y-%m-%d").date()
+            curr = datetime.strptime(sorted_dates[i], "%Y-%m-%d").date()
+            if (curr - prev).days == 1:
+                streak_days += 1
+                max_streak = max(max_streak, streak_days)
+            else:
+                streak_days = 1
+        streak_days = max_streak
+
+    summary = {
+        "total_count": total_count or 0,
+        "this_week_count": this_week_count or 0,
+        "avg_duration_seconds": avg_duration_seconds,
+        "most_common_shape": most_common.shape if most_common else None,
+        "most_common_shape_label": shape_labels.get(most_common.shape, "未知") if most_common else None,
+        "abnormal_days": abnormal_days,
+        "avg_frequency_per_day": avg_frequency_per_day,
+        "longest_duration_seconds": longest_duration_seconds,
+        "record_days": record_days,
+        "streak_days": streak_days,
+    }
+
     return {
         "frequency": [{"date": r.date, "count": r.count} for r in frequency],
         "avg_duration": [{"date": r.date, "avg_seconds": round(r.avg_seconds, 1)} for r in avg_duration],
         "shape_distribution": [{"shape": r.shape, "count": r.count} for r in shape_dist],
+        "summary": summary,
     }
