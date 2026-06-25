@@ -9,6 +9,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { recordsApi } from "@/lib/api";
 import { SHAPE_LABELS, type StatsData, type ShapeType } from "@/lib/types";
+import StatsSummaryCards from "./StatsSummaryCards";
 
 
 export default function StatsCharts() {
@@ -93,6 +94,9 @@ export default function StatsCharts() {
           </button>
         ))}
       </div>
+
+      {/* 数据汇总卡片 */}
+      <StatsSummaryCards data={data.summary} />
 
       {/* 每日频率柱状图 */}
       <Card>
