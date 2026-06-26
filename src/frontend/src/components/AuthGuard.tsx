@@ -31,7 +31,12 @@ function AuthGuardInner({ children }: { children: React.ReactNode }) {
   }
 
   if (isLoginPage) {
-    return <>{children}</>;
+    return (
+      <body className="min-h-screen bg-background text-foreground antialiased">
+        <Toaster />
+        {children}
+      </body>
+    );
   }
 
   return (
