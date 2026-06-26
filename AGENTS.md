@@ -81,9 +81,11 @@ These local instructions override default Superpowers workflows when they confli
 
 ## 6. Git 提交规范
 
-**重要功能完成后必须提交 git。**
+**重要功能完成后应准备 git 提交，但提交前必须先征得用户同意。**
 
-- 每完成一个独立功能模块（如：记录 CRUD、计时器、AI 分析、日历视图等）后，立即提交 git
+- 每完成一个独立功能模块（如：记录 CRUD、计时器、AI 分析、日历视图等）后，应主动提出提交建议，但不能直接提交
+- 每次提交前必须进行澄清式确认，说明准备提交的范围、验证情况、拟使用的 commit message，并等待用户明确同意后才能提交
+- 如果用户未明确同意，即使功能已完成、测试已通过，也只能停留在已修改未提交状态
 - 提交信息使用 conventional commits 格式：`feat: xxx` / `fix: xxx` / `refactor: xxx` / `docs: xxx`
 - 不要等到所有功能做完再一次性提交——分步提交体现开发过程
 - 提交前确保代码能正常运行（至少不报错）

@@ -10,6 +10,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { recordsApi } from "@/lib/api";
 import { SHAPE_LABELS, type StatsData, type ShapeType } from "@/lib/types";
 import StatsSummaryCards from "./StatsSummaryCards";
+import { BarChart3, CalendarDays } from "lucide-react";
+import { RECORDS_CHANGED_EVENT } from "@/lib/records-events";
 
 
 export default function StatsCharts() {
@@ -18,12 +20,35 @@ export default function StatsCharts() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    setLoading(true);
-    recordsApi
-      .stats(days)
-      .then(setData)
-      .catch(() => setData(null))
-      .finally(() => setLoading(false));
+    let active = true;
+    const loadStats = () => {
+      Promise.resolve().then(() => {
+        if (active) setLoading(true);
+      });
+      recordsApi
+        .stats(days)
+        .then((res) => {
+          if (active) setData(res);
+        })
+        .catch(() => {
+          if (active) setData(null);
+        })
+        .finally(() => {
+          if (active) setLoading(false);
+        });
+    };
+
+    loadStats();
+
+    const handleRecordsChanged = () => {
+      loadStats();
+    };
+
+    window.addEventListener(RECORDS_CHANGED_EVENT, handleRecordsChanged);
+    return () => {
+      active = false;
+      window.removeEventListener(RECORDS_CHANGED_EVENT, handleRecordsChanged);
+    };
   }, [days]);
 
   if (loading) {
@@ -42,8 +67,10 @@ export default function StatsCharts() {
       <Card className="border-dashed">
         <CardContent className="flex flex-col items-center justify-center py-16 gap-3">
           <span className="text-5xl">📊</span>
-          <p className="text-sm text-muted-foreground">暂无统计数据</p>
-          <p className="text-xs text-muted-foreground/70">记录更多数据后会显示统计图表</p>
+          <p className="text-sm font-medium text-foreground">暂无统计数据</p>
+          <p className="text-xs text-muted-foreground text-center max-w-[220px]">
+            记录更多数据后会显示统计图表
+          </p>
         </CardContent>
       </Card>
     );
@@ -78,22 +105,41 @@ export default function StatsCharts() {
 
   return (
     <div className="space-y-6 animate-fade-in-up">
-      {/* 范围选择 */}
-      <div className="flex items-center gap-1.5 bg-muted/50 p-1 rounded-full w-fit">
-        {rangeOptions.map((opt) => (
-          <button
-            key={opt.value}
-            onClick={() => setDays(opt.value)}
-            className={`px-4 py-1.5 text-sm rounded-full font-medium transition-all duration-200 ${
-              days === opt.value
-                ? "bg-card text-foreground shadow-sm ring-1 ring-border/30"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            {opt.label}
-          </button>
-        ))}
-      </div>
+      <Card className="overflow-hidden border-border/60 bg-gradient-to-br from-card via-card to-primary/[0.03] shadow-sm">
+        <CardContent className="p-4 sm:p-5 space-y-4">
+          <div className="flex items-start justify-between gap-3">
+            <div className="space-y-1">
+              <div className="inline-flex items-center gap-2 rounded-full bg-primary/8 px-3 py-1 text-[11px] font-medium text-primary">
+                <BarChart3 size={12} />
+                统计范围
+              </div>
+              <p className="text-xs text-muted-foreground">
+                选择一个时间窗口，查看这一阶段的排便频率、时长和形状变化
+              </p>
+            </div>
+            <div className="inline-flex items-center gap-2 rounded-full bg-background/70 px-3 py-1 text-[11px] text-muted-foreground ring-1 ring-border/40">
+              <CalendarDays size={11} />
+              当前范围：近 {days} 天
+            </div>
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            {rangeOptions.map((opt) => (
+              <button
+                key={opt.value}
+                onClick={() => setDays(opt.value)}
+                className={`inline-flex items-center gap-1.5 rounded-full border px-4 py-1.5 text-sm font-medium transition-all duration-200 ${
+                  days === opt.value
+                    ? "border-primary/35 bg-primary/10 text-primary shadow-sm shadow-primary/10"
+                    : "border-border/50 bg-background/70 text-muted-foreground hover:border-primary/20 hover:text-foreground"
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
 
       {/* 数据汇总卡片 */}
       <StatsSummaryCards data={data.summary} />

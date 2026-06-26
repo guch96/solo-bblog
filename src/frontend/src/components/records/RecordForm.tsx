@@ -14,6 +14,7 @@ import {
 import { toast } from "sonner";
 import { ArrowLeft, Save } from "lucide-react";
 import { formatLocalDateInput, normalizeDateTimeLocalValue } from "@/lib/datetime";
+import { emitRecordsChanged } from "@/lib/records-events";
 
 interface Props {
   record?: RecordData;
@@ -142,6 +143,7 @@ export default function RecordForm({ record }: Props) {
         await recordsApi.create(data);
         toast.success("记录已保存");
       }
+      emitRecordsChanged();
       router.push("/records");
       router.refresh();
     } catch (err: unknown) {
@@ -150,6 +152,8 @@ export default function RecordForm({ record }: Props) {
       setSubmitting(false);
     }
   };
+
+  const isTimerRecord = form.input_mode === "timer";
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5 max-w-lg animate-fade-in-up">
@@ -167,6 +171,7 @@ export default function RecordForm({ record }: Props) {
               value={form.start_time}
               onChange={(e) => setForm({ ...form, start_time: e.target.value })}
               required
+              disabled={isTimerRecord}
               className="rounded-xl"
             />
           </div>
@@ -177,10 +182,16 @@ export default function RecordForm({ record }: Props) {
               type="datetime-local"
               value={form.end_time}
               onChange={(e) => setForm({ ...form, end_time: e.target.value })}
+              disabled={isTimerRecord}
               className="rounded-xl"
             />
           </div>
         </div>
+        {isTimerRecord && (
+          <p className="text-xs text-muted-foreground">
+            计时记录的开始时间和结束时间由计时器自动生成，不能手动修改。
+          </p>
+        )}
         {form.input_mode === "timer" && form.duration && (
           <div className="flex items-center gap-2 text-sm text-primary font-medium bg-primary/5 rounded-full px-4 py-2 w-fit">
             <span>⏱</span>

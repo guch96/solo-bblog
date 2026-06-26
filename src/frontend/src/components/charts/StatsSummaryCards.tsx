@@ -40,14 +40,16 @@ export default function StatsSummaryCards({ data }: Props) {
       {CARDS.map((card) => (
         <div
           key={card.key}
-          className="bg-card rounded-xl p-4 ring-1 ring-border/30 hover:ring-border/50 hover:shadow-md transition-all duration-200 flex flex-col gap-2"
+          className="rounded-2xl border border-border/50 bg-gradient-to-br from-card via-card to-primary/[0.02] p-4 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
         >
-          <span className="text-2xl leading-none">{card.icon}</span>
-          <div>
-            <div className="text-2xl font-bold text-foreground tabular-nums">
+          <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/8 text-2xl leading-none">
+            {card.icon}
+          </div>
+          <div className="mt-3">
+            <div className="text-2xl font-bold text-foreground tabular-nums leading-none">
               {card.value(data)}
             </div>
-            <div className="text-xs text-muted-foreground mt-0.5">{card.label}</div>
+            <div className="text-xs text-muted-foreground mt-2">{card.label}</div>
           </div>
         </div>
       ))}

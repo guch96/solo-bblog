@@ -6,6 +6,12 @@ export const getLocalTodayString = (date = new Date()) => {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
 };
 
+export const getLocalDateDaysAgoString = (days: number, date = new Date()) => {
+  const target = new Date(date);
+  target.setDate(target.getDate() - days);
+  return getLocalTodayString(target);
+};
+
 export const formatRecordDateTime = (iso: string) => {
   const d = new Date(iso);
   return new Intl.DateTimeFormat("zh-CN", {

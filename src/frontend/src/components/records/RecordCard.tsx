@@ -21,6 +21,7 @@ import {
 import { toast } from "sonner";
 import { Clock, Pencil, Trash2 } from "lucide-react";
 import { formatRecordDateTime } from "@/lib/datetime";
+import { emitRecordsChanged } from "@/lib/records-events";
 
 interface Props {
   record: RecordData;
@@ -36,6 +37,7 @@ export default function RecordCard({ record }: Props) {
     try {
       await recordsApi.delete(record.id);
       toast.success("记录已删除");
+      emitRecordsChanged();
       setShowDelete(false);
       router.refresh();
     } catch (err: unknown) {

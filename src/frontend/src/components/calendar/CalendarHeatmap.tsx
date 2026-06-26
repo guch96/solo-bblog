@@ -7,6 +7,7 @@ import type { CalendarDay, RecordData } from "@/lib/types";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { getLocalTodayString } from "@/lib/datetime";
 import RecordCard from "@/components/records/RecordCard";
+import { RECORDS_CHANGED_EVENT } from "@/lib/records-events";
 
 export default function CalendarHeatmap() {
   const now = new Date();
@@ -23,24 +24,51 @@ export default function CalendarHeatmap() {
 
   useEffect(() => {
     let active = true;
-    Promise.resolve().then(() => {
-      if (active) setLoading(true);
-    });
-    recordsApi
-      .calendar(monthStr)
-      .then((res) => {
-        if (active) setData(res);
-      })
-      .catch(() => {
-        if (active) setData([]);
-      })
-      .finally(() => {
-        if (active) setLoading(false);
+    const loadCalendarData = () => {
+      Promise.resolve().then(() => {
+        if (active) setLoading(true);
       });
+      recordsApi
+        .calendar(monthStr)
+        .then((res) => {
+          if (active) setData(res);
+        })
+        .catch(() => {
+          if (active) setData([]);
+        })
+        .finally(() => {
+          if (active) setLoading(false);
+        });
+    };
+
+    loadCalendarData();
+
+    const handleRecordsChanged = () => {
+      loadCalendarData();
+      if (selectedDate) {
+        Promise.resolve().then(() => {
+          if (active) setSelectedLoading(true);
+        });
+        recordsApi
+          .list({ date_from: selectedDate, date_to: selectedDate })
+          .then((res) => {
+            if (active) setSelectedRecords(res);
+          })
+          .catch(() => {
+            if (active) setSelectedRecords([]);
+          })
+          .finally(() => {
+            if (active) setSelectedLoading(false);
+          });
+      }
+    };
+
+    window.addEventListener(RECORDS_CHANGED_EVENT, handleRecordsChanged);
     return () => {
       active = false;
+      window.removeEventListener(RECORDS_CHANGED_EVENT, handleRecordsChanged);
     };
-  }, [monthStr]);
+  }, [monthStr, selectedDate]);
 
   const countMap = new Map(data.map((d) => [d.date, d.count]));
   const maxCount = Math.max(1, ...data.map((d) => d.count));

@@ -19,8 +19,9 @@ import {
   type RecordData, type ShapeType, type ColorType, type SmellType, type ComfortType,
 } from "@/lib/types";
 import { toast } from "sonner";
-import { ArrowLeft, Clock, Trash2 } from "lucide-react";
+import { ArrowLeft, Clock, Trash2, FileSearch, Sparkles } from "lucide-react";
 import { formatRecordDateTime } from "@/lib/datetime";
+import { emitRecordsChanged } from "@/lib/records-events";
 
 function Field({
   label,
@@ -64,6 +65,7 @@ export default function RecordDetailPage() {
     try {
       await recordsApi.delete(record!.id);
       toast.success("记录已删除");
+      emitRecordsChanged();
       router.push("/records");
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : "删除失败");
@@ -87,7 +89,10 @@ export default function RecordDetailPage() {
     return (
       <div className="flex flex-col items-center justify-center py-20 gap-3">
         <span className="text-4xl">🔍</span>
-        <p className="text-muted-foreground text-sm">记录不存在</p>
+        <p className="text-sm font-medium text-foreground">记录不存在</p>
+        <p className="text-xs text-muted-foreground text-center max-w-[220px]">
+          这条记录可能已被删除，或者当前账号没有访问权限
+        </p>
         <Button variant="outline" size="sm" onClick={() => router.back()}>
           <ArrowLeft size={14} className="mr-1" />
           返回
@@ -103,12 +108,25 @@ export default function RecordDetailPage() {
   return (
     <div className="space-y-6 animate-fade-in-up">
       {/* 顶部导航 */}
-      <div className="flex items-center justify-between">
+      <div className="space-y-3">
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="icon-sm" onClick={() => router.back()}>
             <ArrowLeft size={18} />
           </Button>
+          <div className="inline-flex items-center gap-2 rounded-full bg-primary/8 px-3 py-1 text-[11px] font-medium text-primary">
+            <FileSearch size={12} />
+            记录详情
+          </div>
+        </div>
+        <div className="space-y-2">
           <h1 className="text-xl font-bold">记录详情</h1>
+          <p className="text-sm text-muted-foreground">
+            查看这次记录的完整时间、形状、颜色、感受和备注信息
+          </p>
+          <div className="inline-flex items-center gap-2 rounded-full bg-background/70 px-3 py-1 text-[11px] text-muted-foreground ring-1 ring-border/40">
+            <Sparkles size={11} className="text-accent" />
+            记录详情可继续编辑，也可以直接删除
+          </div>
         </div>
       </div>
 
