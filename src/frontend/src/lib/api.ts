@@ -83,9 +83,16 @@ export const analysesApi = {
     onDone: () => void,
     onError: (err: string) => void,
   ) => {
+    // 自动注入 JWT Token（浏览器端），与 request() 函数一致
+    const token = typeof window !== "undefined" ? localStorage.getItem("pooptracker_token") : null;
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+
     const response = await fetch(`${BASE_URL}/api/analyses/stream`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers,
       body: JSON.stringify(data),
     });
 
