@@ -1,7 +1,18 @@
 """SQLAlchemy ORM 数据模型"""
 from datetime import datetime, timezone
-from sqlalchemy import Column, Integer, String, Text, DateTime
+from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey
 from database import Base
+
+
+class User(Base):
+    """用户表"""
+    __tablename__ = "users"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    username = Column(String(50), unique=True, nullable=False)
+    password_hash = Column(String(128), nullable=False)
+    wechat_openid = Column(String(100), unique=True, nullable=True)  # 预留小程序绑定
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
 
 class Record(Base):
@@ -9,6 +20,7 @@ class Record(Base):
     __tablename__ = "records"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)  # 数据归属
     start_time = Column(DateTime, nullable=False)
     end_time = Column(DateTime, nullable=True)
     duration = Column(Integer, nullable=True)  # 秒数
@@ -32,11 +44,12 @@ class Analysis(Base):
     __tablename__ = "analyses"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    date_from = Column(DateTime, nullable=False)  # 分析起始日期
-    date_to = Column(DateTime, nullable=False)  # 分析结束日期
-    provider = Column(String(50), nullable=False)  # LLM 厂商名称
-    model = Column(String(50), nullable=False)  # 模型名称
-    summary = Column(Text, nullable=False)  # AI 分析摘要
-    suggestions = Column(Text, nullable=True)  # 健康建议（JSON 字符串）
-    record_ids = Column(Text, nullable=True)  # 关联记录 ID（JSON 数组字符串）
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)  # 数据归属
+    date_from = Column(DateTime, nullable=False)
+    date_to = Column(DateTime, nullable=False)
+    provider = Column(String(50), nullable=False)
+    model = Column(String(50), nullable=False)
+    summary = Column(Text, nullable=False)
+    suggestions = Column(Text, nullable=True)
+    record_ids = Column(Text, nullable=True)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
