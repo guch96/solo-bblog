@@ -48,6 +48,7 @@ def test_update_record(client, auth_headers):
     resp = client.put("/api/records/1", json=update, headers=auth_headers)
     assert resp.status_code == 200
     assert resp.json()["shape"] == "2"
+    assert resp.json()["notes"] == "感觉不太对"
 
 
 def test_delete_record(client, auth_headers):
@@ -69,6 +70,18 @@ def test_create_record_with_process_feeling(client, auth_headers):
     resp = client.post("/api/records", json=payload, headers=auth_headers)
     assert resp.status_code == 201
     assert resp.json()["process_feeling"] == "smooth"
+
+
+def test_create_record_without_process_feeling(client, auth_headers):
+    """测试不填过程感受也能创建记录"""
+    payload = {
+        "start_time": "2026-06-24T08:00:00",
+        "input_mode": "manual",
+    }
+    resp = client.post("/api/records", json=payload, headers=auth_headers)
+    assert resp.status_code == 201
+    data = resp.json()
+    assert data["process_feeling"] is None
 
 
 def test_update_record_process_feeling(client, auth_headers):
