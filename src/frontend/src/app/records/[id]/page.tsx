@@ -20,6 +20,28 @@ import {
 } from "@/lib/types";
 import { toast } from "sonner";
 import { ArrowLeft, Clock, Trash2 } from "lucide-react";
+import { formatRecordDateTime } from "@/lib/datetime";
+
+function Field({
+  label,
+  value,
+  icon,
+}: {
+  label: string;
+  value: string | null;
+  icon?: string;
+}) {
+  if (!value) return null;
+  return (
+    <div className="flex items-center gap-3 py-2.5 border-b border-border/40 last:border-0">
+      <span className="text-muted-foreground text-xs w-16 shrink-0 flex items-center gap-1">
+        {icon && <span>{icon}</span>}
+        {label}
+      </span>
+      <span className="text-sm font-medium">{value}</span>
+    </div>
+  );
+}
 
 export default function RecordDetailPage() {
   const params = useParams();
@@ -74,29 +96,9 @@ export default function RecordDetailPage() {
     );
   }
 
-  const formatTime = (iso: string) =>
-    new Date(iso).toLocaleString("zh-CN", {
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-
   const durationStr = record.duration
     ? `${Math.floor(record.duration / 60)}分${record.duration % 60}秒`
     : null;
-
-  const Field = ({ label, value, icon }: { label: string; value: string | null; icon?: string }) =>
-    value ? (
-      <div className="flex items-center gap-3 py-2.5 border-b border-border/40 last:border-0">
-        <span className="text-muted-foreground text-xs w-16 shrink-0 flex items-center gap-1">
-          {icon && <span>{icon}</span>}
-          {label}
-        </span>
-        <span className="text-sm font-medium">{value}</span>
-      </div>
-    ) : null;
 
   return (
     <div className="space-y-6 animate-fade-in-up">
@@ -115,11 +117,11 @@ export default function RecordDetailPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
             <Clock size={16} className="text-primary" />
-            {formatTime(record.start_time)}
+            {formatRecordDateTime(record.start_time)}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-0">
-          <Field label="结束时间" value={record.end_time ? formatTime(record.end_time) : null} icon="🏁" />
+          <Field label="结束时间" value={record.end_time ? formatRecordDateTime(record.end_time) : null} icon="🏁" />
           <Field label="时长" value={durationStr} icon="⏱" />
           <Field
             label="形状"

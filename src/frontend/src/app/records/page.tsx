@@ -5,7 +5,11 @@ import { Plus } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
-export default function RecordsPage() {
+export default function RecordsPage({
+  searchParams,
+}: {
+  searchParams?: { date?: string };
+}) {
   return (
     <div className="animate-fade-in-up">
       <div className="flex items-center justify-between mb-6">
@@ -20,7 +24,7 @@ export default function RecordsPage() {
           </Button>
         </Link>
       </div>
-      <RecordList />
+      <RecordList defaultDate={searchParams?.date} />
     </div>
   );
 }

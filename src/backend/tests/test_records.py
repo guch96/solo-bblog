@@ -31,6 +31,21 @@ def test_get_records(client, auth_headers):
     assert len(resp.json()) == 1
 
 
+def test_get_records_by_beijing_date(client, auth_headers):
+    """测试按北京时间日期筛选记录"""
+    client.post(
+        "/api/records",
+        json={"start_time": "2026-06-24T18:30:00Z", "input_mode": "manual"},
+        headers=auth_headers,
+    )
+
+    resp = client.get("/api/records?date_from=2026-06-25&date_to=2026-06-25", headers=auth_headers)
+    assert resp.status_code == 200
+    data = resp.json()
+    assert len(data) == 1
+    assert data[0]["start_time"].startswith("2026-06-24T18:30:00")
+
+
 def test_get_record_by_id(client, auth_headers):
     """测试获取单条记录"""
     payload = {"start_time": "2026-06-24T08:00:00", "input_mode": "manual"}

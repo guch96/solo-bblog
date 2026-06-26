@@ -27,6 +27,24 @@ def test_calendar_data(client, auth_headers):
     assert day_24["count"] == 2
 
 
+def test_calendar_data_uses_beijing_date(client, auth_headers):
+    """测试日历按北京时间分组"""
+    client.post(
+        "/api/records",
+        json={
+            "start_time": "2026-06-24T18:30:00Z",
+            "input_mode": "manual",
+        },
+        headers=auth_headers,
+    )
+
+    resp = client.get("/api/records/calendar?month=2026-06", headers=auth_headers)
+    assert resp.status_code == 200
+    data = resp.json()
+    day_25 = next(d for d in data if d["date"] == "2026-06-25")
+    assert day_25["count"] == 1
+
+
 def test_stats_data(client, auth_headers):
     """测试统计数据"""
     # 创建不同形状的记录

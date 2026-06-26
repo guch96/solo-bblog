@@ -8,20 +8,12 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { recordsApi } from "@/lib/api";
 import {
-  SHAPE_LABELS, COLOR_LABELS, SMELL_LABELS, COMFORT_LABELS, PROCESS_FEELING_LABELS,
   type RecordCreate, type RecordData, type InputMode,
   type ShapeType, type ColorType, type SmellType, type ComfortType, type ProcessFeelingType,
 } from "@/lib/types";
 import { toast } from "sonner";
 import { ArrowLeft, Save } from "lucide-react";
-
-// UTC ISO 字符串 → datetime-local 输入框所需的本地时间格式 (yyyy-MM-ddTHH:mm)
-const utcToLocalDatetime = (iso: string): string => {
-  const d = new Date(iso);
-  if (isNaN(d.getTime())) return "";
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-};
+import { formatLocalDateInput } from "@/lib/datetime";
 
 interface Props {
   record?: RecordData;
@@ -109,8 +101,8 @@ export default function RecordForm({ record }: Props) {
   }
 
   const [form, setForm] = useState<FormState>({
-    start_time: utcToLocalDatetime(record?.start_time ?? "") || utcToLocalDatetime(timerData?.start_time ?? ""),
-    end_time: utcToLocalDatetime(record?.end_time ?? "") || utcToLocalDatetime(timerData?.end_time ?? ""),
+    start_time: formatLocalDateInput(record?.start_time ?? "") || formatLocalDateInput(timerData?.start_time ?? ""),
+    end_time: formatLocalDateInput(record?.end_time ?? "") || formatLocalDateInput(timerData?.end_time ?? ""),
     duration: record?.duration ?? (timerData?.duration ? Number(timerData.duration) : null),
     shape: record?.shape ?? "",
     color: record?.color ?? "",

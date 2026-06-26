@@ -1,29 +1,45 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { recordsApi } from "@/lib/api";
-import type { CalendarDay } from "@/lib/types";
+import type { CalendarDay, RecordData } from "@/lib/types";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { getBeijingDateParts } from "@/lib/datetime";
+import RecordCard from "@/components/records/RecordCard";
 
 export default function CalendarHeatmap() {
-  const now = new Date();
-  const [year, setYear] = useState(now.getFullYear());
-  const [month, setMonth] = useState(now.getMonth() + 1);
+  const now = getBeijingDateParts();
+  const [year, setYear] = useState(now.year);
+  const [month, setMonth] = useState(now.month);
   const [data, setData] = useState<CalendarDay[]>([]);
   const [loading, setLoading] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [selectedRecords, setSelectedRecords] = useState<RecordData[] | null>(null);
+  const [selectedLoading, setSelectedLoading] = useState(false);
 
   const monthStr = `${year}-${String(month).padStart(2, "0")}`;
-  const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+  const todayStr = `${now.year}-${String(now.month).padStart(2, "0")}-${String(now.day).padStart(2, "0")}`;
 
   useEffect(() => {
-    setLoading(true);
+    let active = true;
+    Promise.resolve().then(() => {
+      if (active) setLoading(true);
+    });
     recordsApi
       .calendar(monthStr)
-      .then(setData)
-      .catch(() => setData([]))
-      .finally(() => setLoading(false));
+      .then((res) => {
+        if (active) setData(res);
+      })
+      .catch(() => {
+        if (active) setData([]);
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
   }, [monthStr]);
 
   const countMap = new Map(data.map((d) => [d.date, d.count]));
@@ -64,6 +80,28 @@ export default function CalendarHeatmap() {
     if (month === 12) { setMonth(1); setYear((y) => y + 1); }
     else setMonth((m) => m + 1);
   };
+
+  useEffect(() => {
+    if (!selectedDate) return;
+    let active = true;
+    Promise.resolve().then(() => {
+      if (active) setSelectedLoading(true);
+    });
+    recordsApi
+      .list({ date_from: selectedDate, date_to: selectedDate })
+      .then((res) => {
+        if (active) setSelectedRecords(res);
+      })
+      .catch(() => {
+        if (active) setSelectedRecords([]);
+      })
+      .finally(() => {
+        if (active) setSelectedLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [selectedDate]);
 
   return (
     <Card className="animate-fade-in-up">
@@ -109,9 +147,10 @@ export default function CalendarHeatmap() {
           {cells.map((cell) => {
             const isToday = cell.date === todayStr;
             return (
-              <Link
+              <button
                 key={cell.date}
-                href={`/records?date=${cell.date}`}
+                type="button"
+                onClick={() => setSelectedDate(cell.date)}
                 className={`aspect-square rounded-lg flex items-center justify-center text-sm font-medium transition-all duration-200 hover:scale-110 hover:shadow-md relative
                   ${getColor(cell.count)}
                   ${isToday ? "ring-2 ring-accent ring-offset-1 ring-offset-card" : ""}
@@ -122,7 +161,7 @@ export default function CalendarHeatmap() {
                 {isToday && (
                   <span className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-accent" />
                 )}
-              </Link>
+              </button>
             );
           })}
         </div>
@@ -142,6 +181,28 @@ export default function CalendarHeatmap() {
         {loading && (
           <div className="flex justify-center mt-4">
             <div className="w-5 h-5 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+          </div>
+        )}
+
+        {selectedDate && (
+          <div className="mt-5 space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-semibold">{selectedDate} 的记录</h3>
+              <button className="text-xs text-muted-foreground" onClick={() => setSelectedDate(null)}>
+                关闭
+              </button>
+            </div>
+            {selectedLoading ? (
+              <div className="text-sm text-muted-foreground">加载中...</div>
+            ) : selectedRecords && selectedRecords.length > 0 ? (
+              <div className="space-y-3">
+                {selectedRecords.map((record) => (
+                  <RecordCard key={record.id} record={record} />
+                ))}
+              </div>
+            ) : (
+              <div className="text-sm text-muted-foreground">这一天还没有记录</div>
+            )}
           </div>
         )}
       </CardContent>

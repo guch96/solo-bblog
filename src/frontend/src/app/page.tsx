@@ -8,10 +8,11 @@ import { recordsApi } from "@/lib/api";
 import type { RecordData } from "@/lib/types";
 import Timer from "@/components/timer/Timer";
 import RecordCard from "@/components/records/RecordCard";
-import { Plus, ArrowRight } from "lucide-react";
+import { ArrowRight } from "lucide-react";
+import { getBeijingTodayString } from "@/lib/datetime";
 
 export default function HomePage() {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = getBeijingTodayString();
   const [todayRecords, setTodayRecords] = useState<RecordData[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -41,7 +42,6 @@ export default function HomePage() {
             <Link href="/records/new?input_mode=manual">
               <Button variant="ghost" size="sm" className="text-muted-foreground gap-1 text-xs">
                 手动记录
-                <ArrowRight size={12} />
               </Button>
             </Link>
           </div>
@@ -57,12 +57,6 @@ export default function HomePage() {
               {loading ? "加载中..." : todayRecords.length > 0 ? `共 ${todayRecords.length} 条记录` : "今天还没有记录"}
             </p>
           </div>
-          <Link href="/records/new?input_mode=manual">
-            <Button size="sm" className="gap-1 rounded-full">
-              <Plus size={16} />
-              新增
-            </Button>
-          </Link>
         </div>
 
         {loading ? (
@@ -77,7 +71,7 @@ export default function HomePage() {
               <span className="text-5xl">🧻</span>
               <p className="text-sm text-muted-foreground">今天还没有记录</p>
               <p className="text-xs text-muted-foreground/70">
-                点击上方"开始记录"或"手动记录"添加第一条记录吧
+                点击上方&quot;开始记录&quot;或&quot;手动记录&quot;添加第一条记录吧
               </p>
             </CardContent>
           </Card>

@@ -20,6 +20,7 @@ import {
 } from "@/lib/types";
 import { toast } from "sonner";
 import { Clock, Pencil, Trash2 } from "lucide-react";
+import { formatRecordDateTime } from "@/lib/datetime";
 
 interface Props {
   record: RecordData;
@@ -44,16 +45,6 @@ export default function RecordCard({ record }: Props) {
     }
   };
 
-  const formatTime = (iso: string) => {
-    const d = new Date(iso);
-    return d.toLocaleString("zh-CN", {
-      month: "2-digit",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
-
   const durationStr = record.duration
     ? `${Math.floor(record.duration / 60)}分${record.duration % 60}秒`
     : null;
@@ -76,7 +67,7 @@ export default function RecordCard({ record }: Props) {
                   <Clock size={16} />
                 </div>
                 <span className="font-semibold text-sm">
-                  {formatTime(record.start_time)}
+                  {formatRecordDateTime(record.start_time)}
                 </span>
               </div>
               <span className="text-2xl leading-none">

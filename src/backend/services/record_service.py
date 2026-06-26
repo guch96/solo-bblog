@@ -1,12 +1,33 @@
 """记录业务逻辑"""
 import logging
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone, timedelta, date, time
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 from models import Record
 from schemas import RecordCreate, RecordUpdate
 
 logger = logging.getLogger(__name__)
+BEIJING_TZ = timezone(timedelta(hours=8))
+
+
+def _beijing_day_bounds(day_str: str) -> tuple[datetime, datetime]:
+    """把 YYYY-MM-DD 转成北京时间当天的起止 UTC 时间，方便数据库比较。"""
+    day = date.fromisoformat(day_str)
+    start_local = datetime.combine(day, time.min, tzinfo=BEIJING_TZ)
+    end_local = datetime.combine(day, time.max, tzinfo=BEIJING_TZ)
+    return start_local.astimezone(timezone.utc), end_local.astimezone(timezone.utc)
+
+
+def _parse_date_time(value: str, end_of_day: bool = False) -> datetime:
+    """兼容 YYYY-MM-DD 与 ISO datetime，统一转成 UTC aware datetime。"""
+    if len(value) == 10:
+        start_utc, end_utc = _beijing_day_bounds(value)
+        return end_utc if end_of_day else start_utc
+
+    parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=BEIJING_TZ)
+    return parsed.astimezone(timezone.utc)
 
 
 def create_record(db: Session, data: RecordCreate, user_id: int) -> Record:
@@ -36,9 +57,9 @@ def get_records(db: Session, date_from: str | None, date_to: str | None, user_id
     """获取记录列表，支持按日期范围筛选，按用户隔离"""
     query = db.query(Record).filter(Record.user_id == user_id).order_by(Record.start_time.desc())
     if date_from:
-        query = query.filter(Record.start_time >= datetime.fromisoformat(date_from))
+        query = query.filter(Record.start_time >= _parse_date_time(date_from))
     if date_to:
-        query = query.filter(Record.start_time <= datetime.fromisoformat(date_to))
+        query = query.filter(Record.start_time <= _parse_date_time(date_to, end_of_day=True))
     return query.all()
 
 
@@ -84,17 +105,22 @@ def get_calendar_data(db: Session, month: str, user_id: int) -> list[dict]:
     """获取指定月份的日历热力图数据，按用户隔离"""
     logger.info("查询日历数据: month=%s user_id=%d", month, user_id)
     year, month_num = month.split("-")
+    month_start_local = datetime(int(year), int(month_num), 1, tzinfo=BEIJING_TZ)
+    if month_num == "12":
+        next_month_local = datetime(int(year) + 1, 1, 1, tzinfo=BEIJING_TZ)
+    else:
+        next_month_local = datetime(int(year), int(month_num) + 1, 1, tzinfo=BEIJING_TZ)
     records = (
         db.query(
-            func.date(Record.start_time).label("date"),
+            func.date(Record.start_time, "+8 hours").label("date"),
             func.count(Record.id).label("count"),
         )
         .filter(
             Record.user_id == user_id,
-            func.strftime("%Y", Record.start_time) == year,
-            func.strftime("%m", Record.start_time) == month_num,
+            Record.start_time >= month_start_local.astimezone(timezone.utc),
+            Record.start_time < next_month_local.astimezone(timezone.utc),
         )
-        .group_by(func.date(Record.start_time))
+        .group_by(func.date(Record.start_time, "+8 hours"))
         .all()
     )
     return [{"date": r.date, "count": r.count} for r in records]
@@ -107,23 +133,23 @@ def get_stats(db: Session, days: int, user_id: int) -> dict:
 
     frequency = (
         db.query(
-            func.date(Record.start_time).label("date"),
+            func.date(Record.start_time, "+8 hours").label("date"),
             func.count(Record.id).label("count"),
         )
         .filter(Record.user_id == user_id, Record.start_time >= cutoff)
-        .group_by(func.date(Record.start_time))
-        .order_by(func.date(Record.start_time))
+        .group_by(func.date(Record.start_time, "+8 hours"))
+        .order_by(func.date(Record.start_time, "+8 hours"))
         .all()
     )
 
     avg_duration = (
         db.query(
-            func.date(Record.start_time).label("date"),
+            func.date(Record.start_time, "+8 hours").label("date"),
             func.avg(Record.duration).label("avg_seconds"),
         )
         .filter(Record.user_id == user_id, Record.start_time >= cutoff, Record.duration.isnot(None))
-        .group_by(func.date(Record.start_time))
-        .order_by(func.date(Record.start_time))
+        .group_by(func.date(Record.start_time, "+8 hours"))
+        .order_by(func.date(Record.start_time, "+8 hours"))
         .all()
     )
 
@@ -167,7 +193,7 @@ def get_stats(db: Session, days: int, user_id: int) -> dict:
     shape_labels = {"1": "硬块状", "2": "香肠状", "3": "条状裂纹", "4": "光滑条状", "5": "软团状", "6": "糊状", "7": "水样状"}
 
     abnormal_days = (
-        db.query(func.count(func.distinct(func.date(Record.start_time))))
+        db.query(func.count(func.distinct(func.date(Record.start_time, "+8 hours"))))
         .filter(
             Record.user_id == user_id,
             Record.start_time >= cutoff,
