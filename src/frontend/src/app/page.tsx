@@ -9,10 +9,10 @@ import type { RecordData } from "@/lib/types";
 import Timer from "@/components/timer/Timer";
 import RecordCard from "@/components/records/RecordCard";
 import { ArrowRight } from "lucide-react";
-import { getBeijingTodayString } from "@/lib/datetime";
+import { getLocalTodayString } from "@/lib/datetime";
 
 export default function HomePage() {
-  const today = getBeijingTodayString();
+  const today = getLocalTodayString();
   const [todayRecords, setTodayRecords] = useState<RecordData[]>([]);
   const [loading, setLoading] = useState(true);
 

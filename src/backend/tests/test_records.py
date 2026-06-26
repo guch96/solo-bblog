@@ -1,4 +1,8 @@
 """记录 API 测试"""
+from datetime import datetime
+from main import migrate_legacy_utc_datetimes
+from models import Record
+from tests.conftest import TestSessionLocal
 
 
 def test_create_record(client, auth_headers):
@@ -32,10 +36,10 @@ def test_get_records(client, auth_headers):
 
 
 def test_get_records_by_beijing_date(client, auth_headers):
-    """测试按北京时间日期筛选记录"""
+    """测试按本地日期筛选记录"""
     client.post(
         "/api/records",
-        json={"start_time": "2026-06-24T18:30:00Z", "input_mode": "manual"},
+        json={"start_time": "2026-06-25T02:30:00", "input_mode": "manual"},
         headers=auth_headers,
     )
 
@@ -43,7 +47,18 @@ def test_get_records_by_beijing_date(client, auth_headers):
     assert resp.status_code == 200
     data = resp.json()
     assert len(data) == 1
-    assert data[0]["start_time"].startswith("2026-06-24T18:30:00")
+    assert data[0]["start_time"].startswith("2026-06-25T02:30:00")
+
+
+def test_create_record_keeps_server_local_time(client, auth_headers):
+    """测试创建记录后保留服务器本地时间语义"""
+    resp = client.post(
+        "/api/records",
+        json={"start_time": "2026-06-25T08:30:00", "input_mode": "manual"},
+        headers=auth_headers,
+    )
+    assert resp.status_code == 201
+    assert resp.json()["start_time"].startswith("2026-06-25T08:30:00")
 
 
 def test_get_record_by_id(client, auth_headers):
@@ -145,3 +160,21 @@ def test_record_user_isolation(client, auth_headers):
     # testuser 仍然能看到自己的记录
     resp = client.get("/api/records", headers=auth_headers)
     assert len(resp.json()) == 1
+
+
+def test_migrate_legacy_utc_record_to_local_time(client, auth_headers):
+    """测试旧 UTC 记录会迁移为服务器本地时间"""
+    db = TestSessionLocal()
+    db.add(Record(user_id=1, start_time=datetime(2026, 6, 24, 18, 30, 0), input_mode="manual"))
+    db.commit()
+    conn = db.connection()
+    conn.exec_driver_sql("CREATE TABLE IF NOT EXISTS app_meta (key VARCHAR(100) PRIMARY KEY, value VARCHAR(255))")
+    conn.commit()
+    migrate_legacy_utc_datetimes(conn)
+    db.close()
+
+    resp = client.get("/api/records?date_from=2026-06-25&date_to=2026-06-25", headers=auth_headers)
+    assert resp.status_code == 200
+    data = resp.json()
+    assert len(data) == 1
+    assert data[0]["start_time"].startswith("2026-06-25T02:30:00")

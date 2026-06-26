@@ -27,12 +27,12 @@ def test_calendar_data(client, auth_headers):
     assert day_24["count"] == 2
 
 
-def test_calendar_data_uses_beijing_date(client, auth_headers):
-    """测试日历按北京时间分组"""
+def test_calendar_data_uses_server_local_date(client, auth_headers):
+    """测试日历按服务器本地日期分组"""
     client.post(
         "/api/records",
         json={
-            "start_time": "2026-06-24T18:30:00Z",
+            "start_time": "2026-06-25T02:30:00",
             "input_mode": "manual",
         },
         headers=auth_headers,

@@ -13,7 +13,7 @@ import {
 } from "@/lib/types";
 import { toast } from "sonner";
 import { ArrowLeft, Save } from "lucide-react";
-import { formatLocalDateInput } from "@/lib/datetime";
+import { formatLocalDateInput, normalizeDateTimeLocalValue } from "@/lib/datetime";
 
 interface Props {
   record?: RecordData;
@@ -123,8 +123,8 @@ export default function RecordForm({ record }: Props) {
     setSubmitting(true);
     try {
       const data: RecordCreate = {
-        start_time: new Date(form.start_time).toISOString(),
-        end_time: form.end_time ? new Date(form.end_time).toISOString() : null,
+        start_time: normalizeDateTimeLocalValue(form.start_time),
+        end_time: form.end_time ? normalizeDateTimeLocalValue(form.end_time) : null,
         duration: form.duration,
         shape: (form.shape as RecordCreate["shape"]) || null,
         color: (form.color as RecordCreate["color"]) || null,

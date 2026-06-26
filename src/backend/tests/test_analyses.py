@@ -94,6 +94,32 @@ def test_analysis_no_records(client, auth_headers):
     assert resp.status_code == 400
 
 
+def test_analysis_uses_server_local_date_range(client, auth_headers):
+    """测试分析按服务器本地日期范围筛选"""
+    client.post("/api/records", json={
+        "start_time": "2026-06-25T02:30:00",
+        "input_mode": "timer",
+    }, headers=auth_headers)
+
+    mock_provider = MagicMock()
+    mock_provider.model = "mock-model"
+    mock_provider.analyze.return_value = {
+        "summary": "本地日期分析成功",
+        "suggestions": [],
+        "model": "mock-model",
+        "provider": "mock_provider",
+    }
+
+    with patch("services.analysis_service.get_provider", return_value=mock_provider):
+        resp = client.post("/api/analyses", json={
+            "date_from": "2026-06-25",
+            "date_to": "2026-06-25",
+        }, headers=auth_headers)
+
+    assert resp.status_code == 201
+    assert "本地日期分析成功" in resp.json()["summary"]
+
+
 def test_analysis_stream_sse_format(client, auth_headers):
     """测试流式分析返回 SSE 格式数据"""
     client.post("/api/records", json={

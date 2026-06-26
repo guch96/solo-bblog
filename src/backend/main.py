@@ -2,6 +2,7 @@
 import os
 import logging
 from contextlib import asynccontextmanager
+from datetime import datetime
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import models  # noqa: F401 确保 SQLAlchemy 模型注册
@@ -10,6 +11,38 @@ from passlib.hash import bcrypt
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+SERVER_OFFSET = datetime.now().astimezone().utcoffset()
+SERVER_OFFSET_SECONDS = int(SERVER_OFFSET.total_seconds()) if SERVER_OFFSET else 0
+
+
+def migrate_legacy_utc_datetimes(conn) -> bool:
+    """把历史按 UTC 语义写入的时间平移成服务器本地时间，只执行一次。"""
+    migrated = conn.exec_driver_sql(
+        "SELECT value FROM app_meta WHERE key = 'local_time_migrated'"
+    ).fetchone()
+    if migrated:
+        return False
+
+    logger.info("迁移: 开始把旧 UTC 时间转换为服务器本地时间 offset_seconds=%d", SERVER_OFFSET_SECONDS)
+    conn.exec_driver_sql(
+        "UPDATE records SET start_time = datetime(start_time, :offset), "
+        "end_time = CASE WHEN end_time IS NULL THEN NULL ELSE datetime(end_time, :offset) END, "
+        "created_at = datetime(created_at, :offset), "
+        "updated_at = datetime(updated_at, :offset)",
+        {"offset": f"{SERVER_OFFSET_SECONDS} seconds"},
+    )
+    conn.exec_driver_sql(
+        "UPDATE analyses SET date_from = datetime(date_from, :offset), "
+        "date_to = datetime(date_to, :offset), "
+        "created_at = datetime(created_at, :offset)",
+        {"offset": f"{SERVER_OFFSET_SECONDS} seconds"},
+    )
+    conn.exec_driver_sql(
+        "INSERT INTO app_meta(key, value) VALUES ('local_time_migrated', '1')"
+    )
+    conn.commit()
+    logger.info("迁移: 旧时间数据已转换为服务器本地时间")
+    return True
 
 
 @asynccontextmanager
@@ -18,6 +51,11 @@ async def lifespan(app: FastAPI):
     Base.metadata.create_all(bind=engine)
 
     with engine.connect() as conn:
+        conn.exec_driver_sql(
+            "CREATE TABLE IF NOT EXISTS app_meta (key VARCHAR(100) PRIMARY KEY, value VARCHAR(255))"
+        )
+        conn.commit()
+
         # ---- 兼容已有数据库：Record 新增字段 ----
         cols = [row[1] for row in conn.exec_driver_sql("PRAGMA table_info(records)")]
         if "process_feeling" not in cols:
@@ -36,6 +74,8 @@ async def lifespan(app: FastAPI):
             conn.exec_driver_sql("ALTER TABLE analyses ADD COLUMN user_id INTEGER REFERENCES users(id)")
             conn.commit()
             logger.info("迁移: analyses 表新增 user_id 列")
+
+        migrate_legacy_utc_datetimes(conn)
 
     # ---- 插入测试账号 ----
     db = SessionLocal()

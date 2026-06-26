@@ -5,6 +5,7 @@ from datetime import datetime
 from sqlalchemy.orm import Session
 from models import Analysis, Record
 from services.llm_provider import get_provider
+from services.record_service import _parse_local_datetime
 
 logger = logging.getLogger(__name__)
 
@@ -18,8 +19,8 @@ def run_analysis(db: Session, date_from: str, date_to: str, user_id: int) -> Ana
         db.query(Record)
         .filter(
             Record.user_id == user_id,
-            Record.start_time >= datetime.fromisoformat(date_from),
-            Record.start_time <= datetime.fromisoformat(date_to + "T23:59:59"),
+            Record.start_time >= _parse_local_datetime(date_from),
+            Record.start_time <= _parse_local_datetime(date_to, end_of_day=True),
         )
         .all()
     )
@@ -52,8 +53,8 @@ def run_analysis(db: Session, date_from: str, date_to: str, user_id: int) -> Ana
     # 保存分析结果（关联当前用户）
     analysis = Analysis(
         user_id=user_id,
-        date_from=datetime.fromisoformat(date_from),
-        date_to=datetime.fromisoformat(date_to),
+        date_from=_parse_local_datetime(date_from),
+        date_to=_parse_local_datetime(date_to, end_of_day=True),
         provider=result.get("provider", "openai"),
         model=result.get("model", "unknown"),
         summary=result["summary"],

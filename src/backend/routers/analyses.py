@@ -1,7 +1,6 @@
 """AI 分析 API 路由"""
 import json
 import logging
-from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
@@ -10,6 +9,7 @@ from models import User, Record, Analysis
 from schemas import AnalysisRequest, AnalysisResponse
 from services.analysis_service import run_analysis, get_analyses, get_analysis_by_id
 from services.llm_provider import get_provider
+from services.record_service import _parse_local_datetime
 from dependencies.auth import get_current_user
 
 logger = logging.getLogger(__name__)
@@ -65,8 +65,8 @@ def create_analysis_stream(
         db.query(Record)
         .filter(
             Record.user_id == current_user.id,
-            Record.start_time >= datetime.fromisoformat(date_from),
-            Record.start_time <= datetime.fromisoformat(date_to + "T23:59:59"),
+            Record.start_time >= _parse_local_datetime(date_from),
+            Record.start_time <= _parse_local_datetime(date_to, end_of_day=True),
         )
         .all()
     )
@@ -114,8 +114,8 @@ def create_analysis_stream(
             summary = "".join(summary_parts)
             analysis = Analysis(
                 user_id=current_user.id,
-                date_from=datetime.fromisoformat(date_from),
-                date_to=datetime.fromisoformat(date_to),
+                date_from=_parse_local_datetime(date_from),
+                date_to=_parse_local_datetime(date_to, end_of_day=True),
                 provider=provider.provider_name,
                 model=provider.model,
                 summary=summary,

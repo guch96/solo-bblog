@@ -1,27 +1,14 @@
 "use client";
 
-const BEIJING_OFFSET_MINUTES = 8 * 60;
-
 const pad = (n: number) => String(n).padStart(2, "0");
 
-export const getBeijingDateParts = (date = new Date()) => {
-  const local = new Date(date.getTime() + BEIJING_OFFSET_MINUTES * 60 * 1000);
-  return {
-    year: local.getUTCFullYear(),
-    month: local.getUTCMonth() + 1,
-    day: local.getUTCDate(),
-  };
-};
-
-export const getBeijingTodayString = () => {
-  const { year, month, day } = getBeijingDateParts();
-  return `${year}-${pad(month)}-${pad(day)}`;
+export const getLocalTodayString = (date = new Date()) => {
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
 };
 
 export const formatRecordDateTime = (iso: string) => {
   const d = new Date(iso);
   return new Intl.DateTimeFormat("zh-CN", {
-    timeZone: "Asia/Shanghai",
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
@@ -33,16 +20,14 @@ export const formatRecordDateTime = (iso: string) => {
 export const formatLocalDateInput = (iso: string): string => {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "";
-  const parts = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "Asia/Shanghai",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  }).formatToParts(d);
-  const map = Object.fromEntries(parts.map((part) => [part.type, part.value]));
-  return `${map.year}-${map.month}-${map.day}T${map.hour}:${map.minute}`;
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 };
 
+export const normalizeDateTimeLocalValue = (value: string) => {
+  if (!value) return value;
+  return value.length === 16 ? `${value}:00` : value;
+};
+
+export const getCurrentLocalDateTimeString = (date = new Date()) => {
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+};

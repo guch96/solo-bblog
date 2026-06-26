@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Play, Square } from "lucide-react";
+import { getCurrentLocalDateTimeString } from "@/lib/datetime";
 
 export default function Timer() {
   const router = useRouter();
@@ -11,15 +12,10 @@ export default function Timer() {
   const [seconds, setSeconds] = useState(0);
   const startTimeRef = useRef<string | null>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   const start = useCallback(() => {
     setIsRunning(true);
-    startTimeRef.current = new Date().toISOString();
+    startTimeRef.current = getCurrentLocalDateTimeString();
     intervalRef.current = setInterval(() => {
       setSeconds((s) => s + 1);
     }, 1000);
@@ -29,7 +25,7 @@ export default function Timer() {
     if (intervalRef.current) clearInterval(intervalRef.current);
     setIsRunning(false);
 
-    const endTime = new Date().toISOString();
+    const endTime = getCurrentLocalDateTimeString();
     const params = new URLSearchParams({
       start_time: startTimeRef.current!,
       end_time: endTime,
@@ -44,20 +40,6 @@ export default function Timer() {
     const s = totalSeconds % 60;
     return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
   };
-
-  if (!mounted) {
-    return (
-      <div className="flex flex-col items-center gap-6 py-10">
-        <div className="text-5xl sm:text-6xl font-bold tabular-nums text-muted-foreground/30">
-          00:00
-        </div>
-        <Button size="xl" className="gap-2 min-w-[140px] opacity-50" disabled>
-          <Play size={22} />
-          开始
-        </Button>
-      </div>
-    );
-  }
 
   return (
     <div className="flex flex-col items-center gap-6 py-8 sm:py-10">

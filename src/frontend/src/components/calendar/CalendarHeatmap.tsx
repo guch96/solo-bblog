@@ -5,13 +5,13 @@ import { Card, CardContent } from "@/components/ui/card";
 import { recordsApi } from "@/lib/api";
 import type { CalendarDay, RecordData } from "@/lib/types";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { getBeijingDateParts } from "@/lib/datetime";
+import { getLocalTodayString } from "@/lib/datetime";
 import RecordCard from "@/components/records/RecordCard";
 
 export default function CalendarHeatmap() {
-  const now = getBeijingDateParts();
-  const [year, setYear] = useState(now.year);
-  const [month, setMonth] = useState(now.month);
+  const now = new Date();
+  const [year, setYear] = useState(now.getFullYear());
+  const [month, setMonth] = useState(now.getMonth() + 1);
   const [data, setData] = useState<CalendarDay[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
@@ -19,7 +19,7 @@ export default function CalendarHeatmap() {
   const [selectedLoading, setSelectedLoading] = useState(false);
 
   const monthStr = `${year}-${String(month).padStart(2, "0")}`;
-  const todayStr = `${now.year}-${String(now.month).padStart(2, "0")}-${String(now.day).padStart(2, "0")}`;
+  const todayStr = getLocalTodayString(now);
 
   useEffect(() => {
     let active = true;
