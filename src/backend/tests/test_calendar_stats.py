@@ -1,21 +1,21 @@
 """日历热力图 + 统计 API 测试"""
 
 
-def test_calendar_data(client):
+def test_calendar_data(client, auth_headers):
     """测试日历热力图数据"""
     # 创建两条同一天的记录
     for i in range(2):
         client.post("/api/records", json={
             "start_time": "2026-06-24T08:00:00",
             "input_mode": "manual",
-        })
+        }, headers=auth_headers)
     # 创建一条第二天记录
     client.post("/api/records", json={
         "start_time": "2026-06-25T10:00:00",
         "input_mode": "timer",
-    })
+    }, headers=auth_headers)
 
-    resp = client.get("/api/records/calendar?month=2026-06")
+    resp = client.get("/api/records/calendar?month=2026-06", headers=auth_headers)
     assert resp.status_code == 200
     data = resp.json()
     # 应该有 6/24 和 6/25 两天
@@ -27,7 +27,7 @@ def test_calendar_data(client):
     assert day_24["count"] == 2
 
 
-def test_stats_data(client):
+def test_stats_data(client, auth_headers):
     """测试统计数据"""
     # 创建不同形状的记录
     records = [
@@ -36,9 +36,9 @@ def test_stats_data(client):
         {"start_time": "2026-06-24T10:00:00", "duration": 600, "shape": "4", "input_mode": "timer"},
     ]
     for r in records:
-        client.post("/api/records", json=r)
+        client.post("/api/records", json=r, headers=auth_headers)
 
-    resp = client.get("/api/records/stats?days=7")
+    resp = client.get("/api/records/stats?days=7", headers=auth_headers)
     assert resp.status_code == 200
     data = resp.json()
     assert "frequency" in data
@@ -50,7 +50,7 @@ def test_stats_data(client):
     assert shapes["3"] == 1
 
 
-def test_stats_summary_fields(client):
+def test_stats_summary_fields(client, auth_headers):
     """测试统计数据中的 summary 汇总字段"""
     records = [
         {"start_time": "2026-06-20T08:00:00", "duration": 300, "shape": "4", "color": "brown", "input_mode": "timer"},
@@ -58,9 +58,9 @@ def test_stats_summary_fields(client):
         {"start_time": "2026-06-24T10:00:00", "duration": 600, "shape": "4", "color": "brown", "input_mode": "timer"},
     ]
     for r in records:
-        client.post("/api/records", json=r)
+        client.post("/api/records", json=r, headers=auth_headers)
 
-    resp = client.get("/api/records/stats?days=7")
+    resp = client.get("/api/records/stats?days=7", headers=auth_headers)
     assert resp.status_code == 200
     data = resp.json()
     summary = data["summary"]

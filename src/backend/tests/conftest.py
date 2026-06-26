@@ -4,6 +4,8 @@ from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from database import Base, get_db
+from passlib.hash import bcrypt
+from models import User
 
 SQLALCHEMY_TEST_DB = "sqlite:///./data/test.db"
 
@@ -22,8 +24,16 @@ def override_get_db():
 @pytest.fixture(autouse=True)
 def setup_db():
     """每个测试前后重建数据库"""
-    import models  # noqa: F401 确保模型注册
+    import models  # noqa: F401
     Base.metadata.create_all(bind=test_engine)
+
+    # 创建测试用户
+    db = TestSessionLocal()
+    user = User(username="testuser", password_hash=bcrypt.hash("123456"))
+    db.add(user)
+    db.commit()
+    db.close()
+
     yield
     Base.metadata.drop_all(bind=test_engine)
 
@@ -36,3 +46,12 @@ def client():
     with TestClient(app) as c:
         yield c
     app.dependency_overrides.clear()
+
+
+@pytest.fixture
+def auth_headers(client):
+    """返回带 Bearer Token 的请求头字典"""
+    resp = client.post("/api/auth/login", json={"username": "testuser", "password": "123456"})
+    assert resp.status_code == 200
+    token = resp.json()["access_token"]
+    return {"Authorization": f"Bearer {token}"}

@@ -2,14 +2,14 @@
 from unittest.mock import patch, MagicMock
 
 
-def test_create_analysis(client):
+def test_create_analysis(client, auth_headers):
     """测试触发 AI 分析"""
     for i in range(3):
         client.post("/api/records", json={
             "start_time": "2026-06-24T08:00:00",
             "shape": "4",
             "input_mode": "timer",
-        })
+        }, headers=auth_headers)
 
     mock_provider = MagicMock()
     mock_provider.model = "mock-model"
@@ -24,19 +24,19 @@ def test_create_analysis(client):
         resp = client.post("/api/analyses", json={
             "date_from": "2026-06-24",
             "date_to": "2026-06-24",
-        })
+        }, headers=auth_headers)
 
     assert resp.status_code == 201
     data = resp.json()
     assert "测试摘要" in data["summary"]
 
 
-def test_get_analyses(client):
+def test_get_analyses(client, auth_headers):
     """测试获取分析历史"""
     client.post("/api/records", json={
         "start_time": "2026-06-24T08:00:00",
         "input_mode": "timer",
-    })
+    }, headers=auth_headers)
 
     mock_provider = MagicMock()
     mock_provider.model = "mock-model"
@@ -51,19 +51,19 @@ def test_get_analyses(client):
         client.post("/api/analyses", json={
             "date_from": "2026-06-24",
             "date_to": "2026-06-24",
-        })
+        }, headers=auth_headers)
 
-    resp = client.get("/api/analyses")
+    resp = client.get("/api/analyses", headers=auth_headers)
     assert resp.status_code == 200
     assert len(resp.json()) == 1
 
 
-def test_get_analysis_detail(client):
+def test_get_analysis_detail(client, auth_headers):
     """测试获取单条分析详情"""
     client.post("/api/records", json={
         "start_time": "2026-06-24T08:00:00",
         "input_mode": "timer",
-    })
+    }, headers=auth_headers)
 
     mock_provider = MagicMock()
     mock_provider.model = "mock-model"
@@ -78,28 +78,28 @@ def test_get_analysis_detail(client):
         client.post("/api/analyses", json={
             "date_from": "2026-06-24",
             "date_to": "2026-06-24",
-        })
+        }, headers=auth_headers)
 
-    resp = client.get("/api/analyses/1")
+    resp = client.get("/api/analyses/1", headers=auth_headers)
     assert resp.status_code == 200
     assert "summary" in resp.json()
 
 
-def test_analysis_no_records(client):
+def test_analysis_no_records(client, auth_headers):
     """测试无记录时分析返回 400"""
     resp = client.post("/api/analyses", json={
         "date_from": "2026-06-24",
         "date_to": "2026-06-24",
-    })
+    }, headers=auth_headers)
     assert resp.status_code == 400
 
 
-def test_analysis_stream_sse_format(client):
+def test_analysis_stream_sse_format(client, auth_headers):
     """测试流式分析返回 SSE 格式数据"""
     client.post("/api/records", json={
         "start_time": "2026-06-24T08:00:00",
         "input_mode": "timer",
-    })
+    }, headers=auth_headers)
 
     mock_provider = MagicMock()
     mock_provider.model = "mock-model"
@@ -113,7 +113,7 @@ def test_analysis_stream_sse_format(client):
         resp = client.post("/api/analyses/stream", json={
             "date_from": "2026-06-24",
             "date_to": "2026-06-24",
-        })
+        }, headers=auth_headers)
 
     assert resp.status_code == 200
     assert "text/event-stream" in resp.headers["content-type"]
@@ -122,10 +122,10 @@ def test_analysis_stream_sse_format(client):
     assert 'data: {"type":"done"}' in body
 
 
-def test_analysis_stream_no_records(client):
+def test_analysis_stream_no_records(client, auth_headers):
     """测试流式分析无记录时返回 400"""
     resp = client.post("/api/analyses/stream", json={
         "date_from": "2026-06-24",
         "date_to": "2026-06-24",
-    })
+    }, headers=auth_headers)
     assert resp.status_code == 400
