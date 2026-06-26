@@ -8,8 +8,18 @@ import type {
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 async function request<T>(url: string, options?: RequestInit): Promise<T> {
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+
+  // 自动注入 JWT Token（浏览器端）
+  if (typeof window !== "undefined") {
+    const token = localStorage.getItem("pooptracker_token");
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+  }
+
   const res = await fetch(`${BASE_URL}${url}`, {
-    headers: { "Content-Type": "application/json" },
+    headers,
     ...options,
   });
   if (!res.ok) {
