@@ -1,7 +1,5 @@
 import type { Metadata } from "next";
-import { Toaster } from "@/components/ui/sonner";
-import BottomNav from "@/components/nav/BottomNav";
-import DesktopNav from "@/components/nav/DesktopNav";
+import AuthGuard from "@/components/AuthGuard";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -20,14 +18,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           rel="stylesheet"
         />
       </head>
-      <body className="min-h-screen bg-background text-foreground antialiased pb-20 md:pb-0">
-        <DesktopNav />
-        <main className="container max-w-2xl mx-auto px-5 py-6 md:py-8">
-          {children}
-        </main>
-        <BottomNav />
-        <Toaster />
-      </body>
+      <AuthGuard>{children}</AuthGuard>
     </html>
   );
 }

@@ -1,7 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { useAuth } from "@/hooks/useAuth";
+import { Button } from "@/components/ui/button";
+import { LogOut } from "lucide-react";
 
 const navItems = [
   { href: "/", label: "首页" },
@@ -13,10 +16,17 @@ const navItems = [
 
 export default function DesktopNav() {
   const pathname = usePathname();
+  const router = useRouter();
+  const { user, logout } = useAuth();
 
   const isActive = (href: string) => {
     if (href === "/") return pathname === "/";
     return pathname.startsWith(href);
+  };
+
+  const handleLogout = () => {
+    logout();
+    router.push("/login");
   };
 
   return (
@@ -28,7 +38,7 @@ export default function DesktopNav() {
             PoopTracker
           </span>
         </Link>
-        <div className="flex gap-1">
+        <div className="flex gap-1 flex-1">
           {navItems.map((item) => {
             const active = isActive(item.href);
             return (
@@ -46,6 +56,16 @@ export default function DesktopNav() {
             );
           })}
         </div>
+
+        {/* 用户信息 + 退出 */}
+        {user && (
+          <div className="flex items-center gap-2 shrink-0">
+            <span className="text-sm text-muted-foreground">{user.username}</span>
+            <Button variant="ghost" size="icon" onClick={handleLogout} title="退出登录">
+              <LogOut size={16} />
+            </Button>
+          </div>
+        )}
       </nav>
     </header>
   );
