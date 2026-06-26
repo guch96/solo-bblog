@@ -94,6 +94,7 @@ These local instructions override default Superpowers workflows when they confli
 - **代码注语言**：使用中文注释关键业务逻辑
 - **日志**：关键执行点添加 debug/info 日志，便于开发调试
 - **数据库迁移**：新增字段需在 `main.py` 的 `lifespan` 中添加 `PRAGMA table_info` + `ALTER TABLE` 兼容逻辑（SQLite 不支持生产级迁移工具）
+- **用户认证**：JWT Token 鉴权（python-jose + passlib[bcrypt]），`get_current_user` 依赖注入所有受保护路由。Record/Analysis 按 `user_id` 数据隔离。测试账号 user1/user2:123456 在 lifespan 中自动创建
 
 ---
 
@@ -122,6 +123,7 @@ solo-bblog/
 │  ├─ frontend/                  # Next.js 前端
 │  │  ├─ src/
 │  │  │  ├─ app/                 # App Router 页面
+│  │  │  │  ├─ login/              # 登录页
 │  │  │  │  ├─ analysis/         # AI 分析页
 │  │  │  │  ├─ calendar/         # 日历视图页
 │  │  │  │  ├─ records/          # 记录 CRUD 页
@@ -136,7 +138,8 @@ solo-bblog/
 │  │  │  │  ├─ records/          # 记录相关组件
 │  │  │  │  ├─ calendar/         # 日历热力图组件
 │  │  │  │  ├─ charts/           # 统计图表组件
-│  │  │  │  └─ analysis/         # AI 分析卡片组件
+│  │  │  │  ├─ analysis/         # AI 分析卡片组件
+│  │  │  │  └─ AuthGuard.tsx     # 路由鉴权守卫
 │  │  │  ├─ hooks/               # 自定义 Hooks
 │  │  │  └─ lib/                 # 工具函数、API 客户端、类型定义
 │  │  ├─ public/                 # 静态资源
@@ -149,7 +152,10 @@ solo-bblog/
 │     ├─ schemas.py              # Pydantic 请求/响应模型
 │     ├─ routers/
 │     │  ├─ records.py           # 记录 API
-│     │  └─ analyses.py          # 分析 API
+│     │  ├─ analyses.py          # 分析 API
+│     │  └─ auth.py              # 认证 API（登录/注册/me）
+│     ├─ dependencies/
+│     │  └─ auth.py              # JWT 鉴权依赖
 │     ├─ services/
 │     │  ├─ record_service.py    # 记录业务逻辑
 │     │  ├─ analysis_service.py  # 分析业务逻辑
