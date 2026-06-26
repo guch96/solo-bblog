@@ -9,10 +9,11 @@ from schemas import RecordCreate, RecordUpdate
 logger = logging.getLogger(__name__)
 
 
-def create_record(db: Session, data: RecordCreate) -> Record:
+def create_record(db: Session, data: RecordCreate, user_id: int) -> Record:
     """创建一条如厕记录"""
-    logger.info("创建记录: input_mode=%s start_time=%s", data.input_mode, data.start_time)
+    logger.info("创建记录: user_id=%d input_mode=%s start_time=%s", user_id, data.input_mode, data.start_time)
     record = Record(
+        user_id=user_id,
         start_time=data.start_time,
         end_time=data.end_time,
         duration=data.duration,
@@ -31,34 +32,29 @@ def create_record(db: Session, data: RecordCreate) -> Record:
     return record
 
 
-def get_records(db: Session, date_from: str | None = None, date_to: str | None = None) -> list[Record]:
-    """获取记录列表，支持按日期范围筛选"""
-    query = db.query(Record).order_by(Record.start_time.desc())
+def get_records(db: Session, date_from: str | None, date_to: str | None, user_id: int) -> list[Record]:
+    """获取记录列表，支持按日期范围筛选，按用户隔离"""
+    query = db.query(Record).filter(Record.user_id == user_id).order_by(Record.start_time.desc())
     if date_from:
-        query = query.filter(
-            Record.start_time >= datetime.fromisoformat(date_from)
-        )
+        query = query.filter(Record.start_time >= datetime.fromisoformat(date_from))
     if date_to:
-        query = query.filter(
-            Record.start_time <= datetime.fromisoformat(date_to)
-        )
+        query = query.filter(Record.start_time <= datetime.fromisoformat(date_to))
     return query.all()
 
 
-def get_record_by_id(db: Session, record_id: int) -> Record | None:
-    """获取单条记录详情"""
-    return db.query(Record).filter(Record.id == record_id).first()
+def get_record_by_id(db: Session, record_id: int, user_id: int) -> Record | None:
+    """获取单条记录详情，按用户隔离"""
+    return db.query(Record).filter(Record.id == record_id, Record.user_id == user_id).first()
 
 
-def update_record(db: Session, record_id: int, data: RecordUpdate) -> Record | None:
-    """更新记录（部分更新）"""
-    logger.info("更新记录: id=%d", record_id)
-    record = db.query(Record).filter(Record.id == record_id).first()
+def update_record(db: Session, record_id: int, data: RecordUpdate, user_id: int) -> Record | None:
+    """更新记录（部分更新），按用户隔离"""
+    logger.info("更新记录: id=%d user_id=%d", record_id, user_id)
+    record = db.query(Record).filter(Record.id == record_id, Record.user_id == user_id).first()
     if not record:
         logger.warning("记录不存在: id=%d", record_id)
         return None
     update_data = data.model_dump(exclude_unset=True)
-    # 枚举字段转值
     for field in ["shape", "color", "smell", "comfort", "process_feeling", "input_mode"]:
         if field in update_data and update_data[field] is not None:
             update_data[field] = update_data[field].value
@@ -71,10 +67,10 @@ def update_record(db: Session, record_id: int, data: RecordUpdate) -> Record | N
     return record
 
 
-def delete_record(db: Session, record_id: int) -> bool:
-    """删除记录"""
-    logger.info("删除记录: id=%d", record_id)
-    record = db.query(Record).filter(Record.id == record_id).first()
+def delete_record(db: Session, record_id: int, user_id: int) -> bool:
+    """删除记录，按用户隔离"""
+    logger.info("删除记录: id=%d user_id=%d", record_id, user_id)
+    record = db.query(Record).filter(Record.id == record_id, Record.user_id == user_id).first()
     if not record:
         logger.warning("记录不存在: id=%d", record_id)
         return False
@@ -84,9 +80,9 @@ def delete_record(db: Session, record_id: int) -> bool:
     return True
 
 
-def get_calendar_data(db: Session, month: str) -> list[dict]:
-    """获取指定月份的日历热力图数据"""
-    logger.info("查询日历数据: month=%s", month)
+def get_calendar_data(db: Session, month: str, user_id: int) -> list[dict]:
+    """获取指定月份的日历热力图数据，按用户隔离"""
+    logger.info("查询日历数据: month=%s user_id=%d", month, user_id)
     year, month_num = month.split("-")
     records = (
         db.query(
@@ -94,6 +90,7 @@ def get_calendar_data(db: Session, month: str) -> list[dict]:
             func.count(Record.id).label("count"),
         )
         .filter(
+            Record.user_id == user_id,
             func.strftime("%Y", Record.start_time) == year,
             func.strftime("%m", Record.start_time) == month_num,
         )
@@ -103,84 +100,76 @@ def get_calendar_data(db: Session, month: str) -> list[dict]:
     return [{"date": r.date, "count": r.count} for r in records]
 
 
-def get_stats(db: Session, days: int) -> dict:
-    """获取统计数据：频率、时长趋势、形状分布"""
-    logger.info("查询统计数据: days=%d", days)
+def get_stats(db: Session, days: int, user_id: int) -> dict:
+    """获取统计数据：频率、时长趋势、形状分布，按用户隔离"""
+    logger.info("查询统计数据: days=%d user_id=%d", days, user_id)
     cutoff = datetime.now(timezone.utc) - timedelta(days=days)
 
-    # 频率：每日记录次数
     frequency = (
         db.query(
             func.date(Record.start_time).label("date"),
             func.count(Record.id).label("count"),
         )
-        .filter(Record.start_time >= cutoff)
+        .filter(Record.user_id == user_id, Record.start_time >= cutoff)
         .group_by(func.date(Record.start_time))
         .order_by(func.date(Record.start_time))
         .all()
     )
 
-    # 时长趋势：每日平均时长
     avg_duration = (
         db.query(
             func.date(Record.start_time).label("date"),
             func.avg(Record.duration).label("avg_seconds"),
         )
-        .filter(Record.start_time >= cutoff, Record.duration.isnot(None))
+        .filter(Record.user_id == user_id, Record.start_time >= cutoff, Record.duration.isnot(None))
         .group_by(func.date(Record.start_time))
         .order_by(func.date(Record.start_time))
         .all()
     )
 
-    # 形状分布
     shape_dist = (
         db.query(Record.shape, func.count(Record.id).label("count"))
-        .filter(Record.shape.isnot(None))
+        .filter(Record.user_id == user_id, Record.shape.isnot(None))
         .group_by(Record.shape)
         .all()
     )
 
-    # ---- 汇总统计（9个指标） ----
     total_count = (
         db.query(func.count(Record.id))
-        .filter(Record.start_time >= cutoff)
+        .filter(Record.user_id == user_id, Record.start_time >= cutoff)
         .scalar()
     )
 
-    # 本周次数
     now = datetime.now(timezone.utc)
     week_start = now - timedelta(days=now.weekday())
     week_start = week_start.replace(hour=0, minute=0, second=0, microsecond=0)
     this_week_count = (
         db.query(func.count(Record.id))
-        .filter(Record.start_time >= week_start)
+        .filter(Record.user_id == user_id, Record.start_time >= week_start)
         .scalar()
     )
 
-    # 全局平均时长
     avg_dur_row = (
         db.query(func.avg(Record.duration))
-        .filter(Record.start_time >= cutoff, Record.duration.isnot(None))
+        .filter(Record.user_id == user_id, Record.start_time >= cutoff, Record.duration.isnot(None))
         .scalar()
     )
     avg_duration_seconds = round(avg_dur_row, 1) if avg_dur_row else 0
 
-    # 最常见形状
     most_common = (
         db.query(Record.shape, func.count(Record.id).label("cnt"))
-        .filter(Record.shape.isnot(None), Record.start_time >= cutoff)
+        .filter(Record.user_id == user_id, Record.shape.isnot(None), Record.start_time >= cutoff)
         .group_by(Record.shape)
         .order_by(func.count(Record.id).desc())
         .first()
     )
 
-    # 形状中文标签映射
     shape_labels = {"1": "硬块状", "2": "香肠状", "3": "条状裂纹", "4": "光滑条状", "5": "软团状", "6": "糊状", "7": "水样状"}
 
-    # 异常天数（颜色非棕色 或 形状为 1/2/6/7）
     abnormal_days = (
         db.query(func.count(func.distinct(func.date(Record.start_time))))
         .filter(
+            Record.user_id == user_id,
             Record.start_time >= cutoff,
             (Record.color.isnot(None) & (Record.color != "brown"))
             | (Record.shape.in_(["1", "2", "6", "7"])),
@@ -188,21 +177,16 @@ def get_stats(db: Session, days: int) -> dict:
         .scalar()
     ) or 0
 
-    # 有记录的天数
     record_days = len(frequency) if frequency else 0
-
-    # 日均频率
     avg_frequency_per_day = round(total_count / days, 1) if days > 0 else 0
 
-    # 最长单次时长
     longest_row = (
         db.query(func.max(Record.duration))
-        .filter(Record.start_time >= cutoff, Record.duration.isnot(None))
+        .filter(Record.user_id == user_id, Record.start_time >= cutoff, Record.duration.isnot(None))
         .scalar()
     )
     longest_duration_seconds = round(longest_row, 1) if longest_row else 0
 
-    # 最长连续打卡天数
     record_dates = [r.date for r in frequency]
     streak_days = 0
     if record_dates:
