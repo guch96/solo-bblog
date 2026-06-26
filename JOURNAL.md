@@ -23,6 +23,8 @@
 - AGENTS.md 的作用：约束 AI 助手的行为，确保代码质量
 - 自定义 skill 可以覆盖默认行为
 - AGENTS.md 放通用项目信息（技术栈、目录结构），CLAUDE.md 只放 CC 专属配置
+- AGENTs.md和claude.md中增加了superpowers的约束条件，在简单任务的时候不用使用subagent，默认使用
+Inline Execution
 
 
 **遇到的问题：**
@@ -108,5 +110,50 @@
 - 流程：读计划→task brief→分发实现→审查→修复→重审→下一 Task
 - 子代理只拿自己 brief+接口上下文，不被其他 Task 干扰，执行质量高
 - 审查循环有效：Task 1 的 3 个 Important 问题在修复后重审通过才继续
-- 全分支审查用 Opus，发现跨 Task 的 Critical 问题，验证双层门禁必要性
 - 整体 9 Task 约 15min，适合有明确 spec/plan 的多步骤独立开发
+- 使用subagent更加消耗token,因为子agent是干净的上下文无妨更好的使用模型的缓存
+如果是在不复杂的任务下可以使用Inline Execution模式
+
+---
+
+## Day 3 - 2026/06/26
+
+### 今日目标
+- 用户认证与数据隔离功能全栈实现
+- 修复上线后发现的几个 Bug
+
+### 用户认证系统（全栈）
+
+**需求：** JWT 登录、后端注册接口（不暴露前端页面）、两个测试账号、数据按 user_id 隔离、预留微信 openid
+
+**实施方案：** brainstorming → writing-plans（15 Task）→ subagent-driven 执行
+
+**完成事项：**
+- [x] 后端：`User` 模型（username/password_hash/wechat_openid）、`dependencies/auth.py`（JWT 签发+验证）、`routers/auth.py`（login/register/me）
+- [x] 后端：Record/Analysis 模型新增 `user_id` 外键（索引），所有路由注入 `get_current_user` 依赖
+- [x] 后端：service 层全量增加 `user_id` 参数，查询均按 user_id 过滤
+- [x] 后端：lifespan 中兼容迁移（PRAGMA + ALTER TABLE）、种子用户（user1/user2:123456）、旧数据归入 user1
+- [x] 前端：`useAuth` hook（AuthProvider Context + localStorage Token 管理）、login 页面
+- [x] 前端：`AuthGuard` 路由守卫（未登录→/login、已登录→/、加载态）
+- [x] 前端：`api.ts` request() 自动注入 `Authorization: Bearer <token>`
+- [x] 前端：DesktopNav 显示用户名+退出按钮
+- [x] 测试：24/24 通过，含未授权 401、用户数据隔离用例
+- [x] bcrypt 版本踩坑：passlib 1.7.4 不兼容 bcrypt 5.x，锁定 `bcrypt>=4.0.0,<4.1.0`
+
+### Bug 修复
+
+1. **AuthGuard Hydration 错误** — `<div>` 直接作为 `<html>` 子元素。修复：加载态包裹 `<body>` 标签
+2. **时区偏移 8 小时** — `datetime-local` 输入框期望本地时间，但 `RecordForm` 用 `slice(0,16)` 直接截取 UTC 字符串。修复：新增 `utcToLocalDatetime()` 工具函数，利用 `new Date()` 本地时区转换
+3. **记录列表 401 Unauthorized** — `RecordList.tsx` 和 `page.tsx` 是 Server Component，在服务端执行 `recordsApi.list()`，此时 `window` 为 undefined，Token 不会被注入请求头。修复：改为 Client Component，数据获取移至 `useEffect` 中浏览器端执行
+
+### CC 使用体验
+
+**systematic-debugging skill**
+- 时区问题：逐层追踪数据流（Timer→URL param→RecordForm→datetime-local input），发现 UTC/本地时间转换断层
+- 401 问题：追踪 Token 传递链路（localStorage→api.ts→HTTP header→后端），发现 Server Component 执行环境无 `window` 对象
+- 体会：「每次都先完整调查再动手」避免了很多无效尝试
+
+**Server Component vs Client Component 的教训**
+- Next.js App Router 中，Server Component 调用 `localStorage` 的代码会静默跳过
+- `typeof window !== "undefined"` 的守卫让错误不明显——Server Component 不发 Token、后端返回 401、catch 块静默吞错
+- 规则：任何依赖浏览器 API（localStorage/fetch with auth）的数据请求，必须在 Client Component 的 `useEffect` 中执行

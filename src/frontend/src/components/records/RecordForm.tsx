@@ -15,6 +15,14 @@ import {
 import { toast } from "sonner";
 import { ArrowLeft, Save } from "lucide-react";
 
+// UTC ISO 字符串 → datetime-local 输入框所需的本地时间格式 (yyyy-MM-ddTHH:mm)
+const utcToLocalDatetime = (iso: string): string => {
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return "";
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+};
+
 interface Props {
   record?: RecordData;
 }
@@ -101,8 +109,8 @@ export default function RecordForm({ record }: Props) {
   }
 
   const [form, setForm] = useState<FormState>({
-    start_time: record?.start_time?.slice(0, 16) ?? timerData?.start_time?.slice(0, 16) ?? "",
-    end_time: record?.end_time?.slice(0, 16) ?? timerData?.end_time?.slice(0, 16) ?? "",
+    start_time: utcToLocalDatetime(record?.start_time ?? "") || utcToLocalDatetime(timerData?.start_time ?? ""),
+    end_time: utcToLocalDatetime(record?.end_time ?? "") || utcToLocalDatetime(timerData?.end_time ?? ""),
     duration: record?.duration ?? (timerData?.duration ? Number(timerData.duration) : null),
     shape: record?.shape ?? "",
     color: record?.color ?? "",

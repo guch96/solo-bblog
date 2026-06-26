@@ -1,3 +1,6 @@
+"use client";
+
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -7,19 +10,17 @@ import Timer from "@/components/timer/Timer";
 import RecordCard from "@/components/records/RecordCard";
 import { Plus, ArrowRight } from "lucide-react";
 
-export const dynamic = "force-dynamic";
-
-export default async function HomePage() {
+export default function HomePage() {
   const today = new Date().toISOString().slice(0, 10);
-  let todayRecords: RecordData[] = [];
-  try {
-    todayRecords = await recordsApi.list({
-      date_from: today,
-      date_to: today,
-    });
-  } catch {
-    // 后端未启动时显示空状态
-  }
+  const [todayRecords, setTodayRecords] = useState<RecordData[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    recordsApi.list({ date_from: today, date_to: today })
+      .then(setTodayRecords)
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [today]);
 
   return (
     <div className="space-y-8">
@@ -53,7 +54,7 @@ export default async function HomePage() {
           <div>
             <h2 className="text-lg font-bold">今日记录</h2>
             <p className="text-xs text-muted-foreground mt-0.5">
-              {todayRecords.length > 0 ? `共 ${todayRecords.length} 条记录` : "今天还没有记录"}
+              {loading ? "加载中..." : todayRecords.length > 0 ? `共 ${todayRecords.length} 条记录` : "今天还没有记录"}
             </p>
           </div>
           <Link href="/records/new?input_mode=manual">
@@ -64,7 +65,13 @@ export default async function HomePage() {
           </Link>
         </div>
 
-        {todayRecords.length === 0 ? (
+        {loading ? (
+          <Card className="border-dashed">
+            <CardContent className="flex flex-col items-center justify-center py-12 gap-3">
+              <span className="text-sm text-muted-foreground">加载中...</span>
+            </CardContent>
+          </Card>
+        ) : todayRecords.length === 0 ? (
           <Card className="border-dashed">
             <CardContent className="flex flex-col items-center justify-center py-12 gap-3">
               <span className="text-5xl">🧻</span>

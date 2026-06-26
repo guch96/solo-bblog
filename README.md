@@ -54,7 +54,7 @@ npm run dev
 
 ### 环境变量
 
-复制 `.env.example` 为 `.env`，填入你的 LLM 配置：
+复制 `.env.example` 为 `.env`，填入你的 LLM 配置：（ai分析功能）
 
 ```bash
 LLM_MODEL=gpt-4o-mini          # 模型名称
