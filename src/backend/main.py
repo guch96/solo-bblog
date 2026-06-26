@@ -75,6 +75,13 @@ async def lifespan(app: FastAPI):
             conn.commit()
             logger.info("迁移: analyses 表新增 user_id 列")
 
+        # ---- 移除 analyses 唯一索引（允许同一时间范围多次分析） ----
+        conn.exec_driver_sql(
+            "DROP INDEX IF EXISTS uq_analyses_user_daterange"
+        )
+        conn.commit()
+        logger.info("迁移: analyses 唯一索引 uq_analyses_user_daterange 已移除")
+
         migrate_legacy_utc_datetimes(conn)
 
     # ---- 插入测试账号 ----
