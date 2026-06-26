@@ -138,3 +138,33 @@ class StatsResponse(BaseModel):
     avg_duration: list[dict]
     shape_distribution: list[dict]
     summary: dict | None = None
+
+
+# ---- 认证 Schema ----
+class LoginRequest(BaseModel):
+    """登录请求"""
+    username: str = Field(min_length=1, max_length=50)
+    password: str = Field(min_length=1, max_length=128)
+
+
+class RegisterRequest(BaseModel):
+    """注册请求（仅后端使用，前端不暴露）"""
+    username: str = Field(min_length=1, max_length=50)
+    password: str = Field(min_length=1, max_length=128)
+
+
+class TokenResponse(BaseModel):
+    """登录响应"""
+    access_token: str
+    token_type: str = "bearer"
+    username: str
+    user_id: int
+
+
+class UserResponse(BaseModel):
+    """用户信息响应"""
+    id: int
+    username: str
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
