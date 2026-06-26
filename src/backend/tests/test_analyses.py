@@ -155,3 +155,32 @@ def test_analysis_stream_no_records(client, auth_headers):
         "date_to": "2026-06-24",
     }, headers=auth_headers)
     assert resp.status_code == 400
+
+
+def test_analysis_stream_persists_before_done_event(client, auth_headers):
+    """测试流式分析在返回 done 事件前已持久化新记录"""
+    client.post("/api/records", json={
+        "start_time": "2026-06-24T08:00:00",
+        "input_mode": "timer",
+    }, headers=auth_headers)
+
+    mock_provider = MagicMock()
+    mock_provider.model = "mock-model"
+    mock_provider.provider_name = "mock_provider"
+    mock_provider.analyze_stream.return_value = iter([
+        'data: {"type":"summary_chunk","content":"新的分析摘要"}\n\n',
+        'data: {"type":"suggestions","content":["建议A"]}\n\n',
+        'data: {"type":"done"}\n\n',
+    ])
+
+    with patch("routers.analyses.get_provider", return_value=mock_provider):
+        resp = client.post("/api/analyses/stream", json={
+            "date_from": "2026-06-24",
+            "date_to": "2026-06-24",
+        }, headers=auth_headers)
+
+    assert resp.status_code == 200
+    analyses_resp = client.get("/api/analyses", headers=auth_headers)
+    data = analyses_resp.json()
+    assert len(data) == 1
+    assert data[0]["summary"] == "新的分析摘要"

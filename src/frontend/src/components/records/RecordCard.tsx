@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/dialog";
 import { recordsApi } from "@/lib/api";
 import {
-  SHAPE_LABELS, COLOR_LABELS,
+  SHAPE_DISPLAY, COLOR_LABELS,
   type RecordData, type ShapeType, type ColorType,
 } from "@/lib/types";
 import { toast } from "sonner";
@@ -51,12 +51,6 @@ export default function RecordCard({ record }: Props) {
     ? `${Math.floor(record.duration / 60)}分${record.duration % 60}秒`
     : null;
 
-  // Bristol 形状对应的表情
-  const shapeEmoji: Record<string, string> = {
-    "1": "🪨", "2": "🪨", "3": "💩", "4": "💩",
-    "5": "💩", "6": "💩", "7": "💧",
-  };
-
   return (
     <>
       <Card className="group animate-fade-in-up">
@@ -73,7 +67,7 @@ export default function RecordCard({ record }: Props) {
                 </span>
               </div>
               <span className="text-2xl leading-none">
-                {record.shape ? shapeEmoji[record.shape] || "💩" : "💩"}
+                {record.shape ? SHAPE_DISPLAY[record.shape as ShapeType]?.emoji || "💩" : "💩"}
               </span>
             </div>
 
@@ -86,7 +80,7 @@ export default function RecordCard({ record }: Props) {
               )}
               {record.shape && (
                 <span className="inline-flex items-center gap-1 text-xs bg-primary/10 text-primary font-medium px-2.5 py-1 rounded-full">
-                  {SHAPE_LABELS[record.shape as ShapeType]?.split("（")[0] || record.shape}
+                  {SHAPE_DISPLAY[record.shape as ShapeType]?.shortLabel || record.shape}
                 </span>
               )}
               {record.color && (

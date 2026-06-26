@@ -58,6 +58,7 @@ export default function AnalysisPage() {
   }, [streaming]);
 
   const handleStreamAnalyze = async () => {
+    if (streaming) return;
     if (!dateFrom || !dateTo) {
       toast.error("请选择时间范围");
       return;
@@ -78,6 +79,7 @@ export default function AnalysisPage() {
   };
 
   const applyShortcut = (shortcutKey: (typeof ANALYSIS_SHORTCUTS)[number]["key"]) => {
+    if (streaming) return;
     const shortcut = ANALYSIS_SHORTCUTS.find((item) => item.key === shortcutKey);
     if (!shortcut) return;
     const next = shortcut.getValue();
@@ -127,8 +129,9 @@ export default function AnalysisPage() {
                   key={shortcut.key}
                   type="button"
                   onClick={() => applyShortcut(shortcut.key)}
+                  disabled={streaming}
                   className={cn(
-                    "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[11px] font-medium transition-all duration-200",
+                    "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[11px] font-medium transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50",
                     selected
                       ? "border-primary/35 bg-primary/10 text-primary shadow-sm shadow-primary/10"
                       : "border-border/50 bg-background/70 text-muted-foreground hover:border-primary/20 hover:text-foreground"
@@ -155,6 +158,7 @@ export default function AnalysisPage() {
                   setDateFrom(e.target.value);
                   setActiveShortcut("");
                 }}
+                disabled={streaming}
                 className="h-10 rounded-xl border-border/50 bg-transparent text-sm"
               />
             </div>
@@ -172,6 +176,7 @@ export default function AnalysisPage() {
                   setDateTo(e.target.value);
                   setActiveShortcut("");
                 }}
+                disabled={streaming}
                 className="h-10 rounded-xl border-border/50 bg-transparent text-sm"
               />
             </div>
@@ -192,7 +197,7 @@ export default function AnalysisPage() {
               onClick={handleStreamAnalyze}
               disabled={streaming}
               size="lg"
-              className="h-12 gap-2 rounded-full text-base font-semibold"
+              className="h-12 gap-2 rounded-full text-base font-semibold disabled:opacity-60 disabled:cursor-not-allowed"
             >
               <Sparkles size={18} />
               {streaming ? "分析中..." : "开始分析"}

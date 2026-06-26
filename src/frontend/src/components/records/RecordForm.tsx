@@ -10,6 +10,7 @@ import { recordsApi } from "@/lib/api";
 import {
   type RecordCreate, type RecordData, type InputMode,
   type ShapeType, type ColorType, type SmellType, type ComfortType, type ProcessFeelingType,
+  SHAPE_DISPLAY,
 } from "@/lib/types";
 import { toast } from "sonner";
 import { ArrowLeft, Save } from "lucide-react";
@@ -20,16 +21,14 @@ interface Props {
   record?: RecordData;
 }
 
-// Bristol 形状配置：表情 + 简短标签 + 描述
-const SHAPE_OPTIONS: { key: ShapeType; emoji: string; label: string; desc: string }[] = [
-  { key: "1", emoji: "🪨", label: "硬块状", desc: "分离的硬块，像坚果" },
-  { key: "2", emoji: "🥜", label: "香肠状", desc: "块状香肠形，表面凹凸" },
-  { key: "3", emoji: "🌭", label: "条状裂纹", desc: "表面有裂纹的条状" },
-  { key: "4", emoji: "🍌", label: "光滑条状", desc: "光滑柔软，像香蕉" },
-  { key: "5", emoji: "🍇", label: "软团状", desc: "柔软的团块，边缘清晰" },
-  { key: "6", emoji: "🥞", label: "糊状", desc: "蓬松糊状，边缘模糊" },
-  { key: "7", emoji: "💧", label: "水样状", desc: "完全液态，无固体" },
-];
+const SHAPE_OPTIONS = (Object.entries(SHAPE_DISPLAY) as [ShapeType, (typeof SHAPE_DISPLAY)[ShapeType]][]).map(
+  ([key, value]) => ({
+    key,
+    emoji: value.emoji,
+    label: value.shortLabel,
+    desc: value.desc,
+  }),
+);
 
 // 颜色配置：实际颜色值 + 标签
 const COLOR_OPTIONS: { key: ColorType; hex: string; ring: string; label: string }[] = [

@@ -107,15 +107,20 @@ def create_analysis_stream(
                             summary_parts.append(payload["content"])
                         elif payload["type"] == "suggestions":
                             suggestions = payload["content"]
+                        elif payload["type"] == "done":
+                            continue
                     except json.JSONDecodeError:
                         pass
                 yield sse_event
 
             summary = "".join(summary_parts)
+
+            parsed_from = _parse_local_datetime(date_from)
+            parsed_to = _parse_local_datetime(date_to, end_of_day=True)
             analysis = Analysis(
                 user_id=current_user.id,
-                date_from=_parse_local_datetime(date_from),
-                date_to=_parse_local_datetime(date_to, end_of_day=True),
+                date_from=parsed_from,
+                date_to=parsed_to,
                 provider=provider.provider_name,
                 model=provider.model,
                 summary=summary,
@@ -125,6 +130,7 @@ def create_analysis_stream(
             db.add(analysis)
             db.commit()
             logger.info("流式分析持久化完成: id=%d user_id=%d", analysis.id, current_user.id)
+            yield f"data: {json.dumps({'type': 'done'})}\n\n"
         except Exception as e:
             logger.error("流式分析异常: %s", e)
             yield f"data: {json.dumps({'type': 'error', 'content': str(e)})}\n\n"

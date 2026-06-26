@@ -2,7 +2,6 @@ import type {
   RecordData, RecordCreate, RecordUpdate,
   AnalysisData, AnalysisRequest,
   CalendarDay, StatsData,
-  ProcessFeelingType,
 } from "./types";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
@@ -82,6 +81,7 @@ export const analysesApi = {
     onSuggestions: (suggestions: string[]) => void,
     onDone: () => void,
     onError: (err: string) => void,
+    signal?: AbortSignal,
   ) => {
     // 自动注入 JWT Token（浏览器端），与 request() 函数一致
     const token = typeof window !== "undefined" ? localStorage.getItem("pooptracker_token") : null;
@@ -90,11 +90,21 @@ export const analysesApi = {
       headers["Authorization"] = `Bearer ${token}`;
     }
 
-    const response = await fetch(`${BASE_URL}/api/analyses/stream`, {
-      method: "POST",
-      headers,
-      body: JSON.stringify(data),
-    });
+    let response: Response;
+    try {
+      response = await fetch(`${BASE_URL}/api/analyses/stream`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify(data),
+        signal,
+      });
+    } catch (err) {
+      if (err instanceof DOMException && err.name === "AbortError") {
+        return; // 请求被取消，静默退出
+      }
+      onError("网络请求失败");
+      return;
+    }
 
     if (!response.ok) {
       const err = await response.json().catch(() => ({ detail: "流式请求失败" }));
@@ -111,32 +121,39 @@ export const analysesApi = {
     const decoder = new TextDecoder();
     let buffer = "";
 
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
 
-      buffer += decoder.decode(value, { stream: true });
-      const lines = buffer.split("\n");
-      buffer = lines.pop() || "";
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || "";
 
-      for (const line of lines) {
-        if (line.startsWith("data: ")) {
-          try {
-            const payload = JSON.parse(line.slice(6));
-            if (payload.type === "summary_chunk") {
-              onChunk(payload.content);
-            } else if (payload.type === "suggestions") {
-              onSuggestions(payload.content);
-            } else if (payload.type === "done") {
-              onDone();
-            } else if (payload.type === "error") {
-              onError(payload.content);
+        for (const line of lines) {
+          if (line.startsWith("data: ")) {
+            try {
+              const payload = JSON.parse(line.slice(6));
+              if (payload.type === "summary_chunk") {
+                onChunk(payload.content);
+              } else if (payload.type === "suggestions") {
+                onSuggestions(payload.content);
+              } else if (payload.type === "done") {
+                onDone();
+              } else if (payload.type === "error") {
+                onError(payload.content);
+              }
+            } catch {
+              // 跳过无法解析的行
             }
-          } catch {
-            // 跳过无法解析的行
           }
         }
       }
+    } catch (err) {
+      if (err instanceof DOMException && err.name === "AbortError") {
+        return; // 组件卸载或主动取消时静默退出
+      }
+      onError(err instanceof Error ? err.message : "流式读取失败");
     }
   },
 };

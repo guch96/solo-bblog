@@ -102,6 +102,16 @@ export const SHAPE_LABELS: Record<ShapeType, string> = {
   "7": "水样（腹泻）",
 };
 
+export const SHAPE_DISPLAY: Record<ShapeType, { emoji: string; shortLabel: string; desc: string }> = {
+  "1": { emoji: "🪨", shortLabel: "硬块状", desc: "分离的硬块，像坚果" },
+  "2": { emoji: "🥜", shortLabel: "香肠状", desc: "块状香肠形，表面凹凸" },
+  "3": { emoji: "🌭", shortLabel: "条状裂纹", desc: "表面有裂纹的条状" },
+  "4": { emoji: "🍌", shortLabel: "光滑条状", desc: "光滑柔软，像香蕉" },
+  "5": { emoji: "🍇", shortLabel: "软团状", desc: "柔软的团块，边缘清晰" },
+  "6": { emoji: "🥞", shortLabel: "糊状", desc: "蓬松糊状，边缘模糊" },
+  "7": { emoji: "💧", shortLabel: "水样状", desc: "完全液态，无固体" },
+};
+
 export const COLOR_LABELS: Record<ColorType, string> = {
   brown: "棕色",
   dark_brown: "深棕色",

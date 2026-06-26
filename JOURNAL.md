@@ -157,3 +157,5 @@ Inline Execution
 - Next.js App Router 中，Server Component 调用 `localStorage` 的代码会静默跳过
 - `typeof window !== "undefined"` 的守卫让错误不明显——Server Component 不发 Token、后端返回 401、catch 块静默吞错
 - 规则：任何依赖浏览器 API（localStorage/fetch with auth）的数据请求，必须在 Client Component 的 `useEffect` 中执行
+
+

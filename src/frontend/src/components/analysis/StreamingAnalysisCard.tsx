@@ -18,34 +18,52 @@ export default function StreamingAnalysisCard({ dateFrom, dateTo, onComplete, on
   const [done, setDone] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const summaryRef = useRef<HTMLParagraphElement>(null);
+  const onCompleteRef = useRef(onComplete);
+  onCompleteRef.current = onComplete;
+  const onErrorRef = useRef(onError);
+  onErrorRef.current = onError;
 
   useEffect(() => {
+    const abortController = new AbortController();
+    let finished = false;
     let cancelled = false;
 
     analysesApi.stream(
       { date_from: dateFrom, date_to: dateTo },
       (chunk) => {
-        if (!cancelled) setSummary((prev) => prev + chunk);
+        if (!cancelled) {
+          setSummary((prev) => prev + chunk);
+        }
       },
       (sugs) => {
-        if (!cancelled) setSuggestions(sugs);
+        if (!cancelled) {
+          setSuggestions(sugs);
+        }
       },
       () => {
+        finished = true;
         if (!cancelled) {
           setDone(true);
-          onComplete();
+          onCompleteRef.current();
         }
       },
       (err) => {
+        finished = true;
         if (!cancelled) {
           setError(err);
-          onError(err);
+          onErrorRef.current(err);
         }
       },
+      abortController.signal,
     );
 
-    return () => { cancelled = true; };
-  }, [dateFrom, dateTo, onError]);
+    return () => {
+      cancelled = true;
+      if (!finished) {
+        abortController.abort();
+      }
+    };
+  }, [dateFrom, dateTo]);
 
   useEffect(() => {
     // 自动滚动到最新内容
