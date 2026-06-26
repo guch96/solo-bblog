@@ -24,9 +24,11 @@ function AuthGuardInner({ children }: { children: React.ReactNode }) {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <span className="text-muted-foreground text-sm">加载中...</span>
-      </div>
+      <body className="min-h-screen bg-background text-foreground antialiased">
+        <div className="min-h-screen flex items-center justify-center">
+          <span className="text-muted-foreground text-sm">加载中...</span>
+        </div>
+      </body>
     );
   }
 
