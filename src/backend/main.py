@@ -48,6 +48,11 @@ def migrate_legacy_utc_datetimes(conn) -> bool:
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """应用生命周期：启动时建表、数据库迁移、生成测试账号、迁移旧数据"""
+    # 检测 JWT 密钥安全性
+    from dependencies.auth import JWT_SECRET
+    if JWT_SECRET == "pooptracker-local-dev-secret":
+        logger.warning("⚠️ JWT_SECRET 使用默认值，生产环境必须通过环境变量设置独立密钥！")
+
     Base.metadata.create_all(bind=engine)
 
     with engine.connect() as conn:

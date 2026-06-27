@@ -158,11 +158,6 @@ Inline Execution
 - `typeof window !== "undefined"` 的守卫让错误不明显——Server Component 不发 Token、后端返回 401、catch 块静默吞错
 - 规则：任何依赖浏览器 API（localStorage/fetch with auth）的数据请求，必须在 Client Component 的 `useEffect` 中执行
 
-### 后续工作 TODO
-- [ ] 后端数据库从 SQLite 升级为 PostgreSQL
-- [ ] 设计并实现更完善的权限体系
-- [ ] 为每个账号增加每周可用 AI 分析次数限制，而不是无限可用
-- [ ] 升级为微信小程序版本
 
 ---
 
@@ -254,3 +249,8 @@ Phase 4 (页面测试):   9 文件, 22 测试
 - 明确测试纪律：新功能或 bug 修复必须先写测试（红→绿→重构），不得以"简单"、"赶时间"为由跳过
 - 将测试要求从口头约定变为文档化约束，后续任何开发分支都必须遵守
 
+### 后续工作 TODO
+- [ ] 后端数据库从 SQLite 升级为 PostgreSQL
+- [ ] 设计并实现更完善的权限体系
+- [ ] 为每个账号增加每周可用 AI 分析次数限制，而不是无限可用
+- [ ] 升级为微信小程序版本

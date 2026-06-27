@@ -97,6 +97,9 @@ def create_analysis_stream(
         summary_parts: list[str] = []
         suggestions: list[str] = []
 
+        # 注意：db 由 FastAPI Depends(get_db) 注入，其生命周期绑定到整个请求-响应周期。
+        # StreamingResponse 的 generator 在 response 完全发送后才结束迭代，
+        # 此时 get_db() 的 finally: db.close() 才会执行，因此 db 在整个生成过程中有效。
         try:
             for sse_event in provider.analyze_stream(records_data, date_from, date_to):
                 if sse_event.startswith("data: "):
@@ -133,7 +136,7 @@ def create_analysis_stream(
             yield f"data: {json.dumps({'type': 'done'})}\n\n"
         except Exception as e:
             logger.error("流式分析异常: %s", e)
-            yield f"data: {json.dumps({'type': 'error', 'content': str(e)})}\n\n"
+            yield f"data: {json.dumps({'type': 'error', 'content': '分析过程出现错误'})}\n\n"
 
     return StreamingResponse(
         generate(),

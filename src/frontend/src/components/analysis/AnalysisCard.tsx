@@ -13,9 +13,15 @@ interface Props {
 
 export default function AnalysisCard({ analysis }: Props) {
   const [expanded, setExpanded] = useState(false);
-  const suggestions: string[] = analysis.suggestions
-    ? JSON.parse(analysis.suggestions)
-    : [];
+  // suggestions 从后端 JSON 字符串解析，需防护格式异常
+  let suggestions: string[] = [];
+  try {
+    suggestions = analysis.suggestions
+      ? JSON.parse(analysis.suggestions)
+      : [];
+  } catch {
+    suggestions = [];
+  }
   const summaryPreview = analysis.summary.length > 120
     ? `${analysis.summary.slice(0, 120)}...`
     : analysis.summary;

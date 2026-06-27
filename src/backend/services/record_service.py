@@ -108,12 +108,19 @@ def delete_record(db: Session, record_id: int, user_id: int) -> bool:
 def get_calendar_data(db: Session, month: str, user_id: int) -> list[dict]:
     """获取指定月份的日历热力图数据，按用户隔离"""
     logger.info("查询日历数据: month=%s user_id=%d", month, user_id)
+    # 校验月份格式：必须为 YYYY-MM
+    import re
+    if not re.match(r"^\d{4}-\d{2}$", month):
+        raise ValueError(f"月份格式无效，需为 YYYY-MM: {month}")
     year, month_num = month.split("-")
-    month_start = datetime(int(year), int(month_num), 1)
-    if month_num == "12":
+    month_int = int(month_num)
+    if month_int < 1 or month_int > 12:
+        raise ValueError(f"月份必须在 01-12 之间: {month_num}")
+    month_start = datetime(int(year), month_int, 1)
+    if month_int == 12:
         next_month = datetime(int(year) + 1, 1, 1)
     else:
-        next_month = datetime(int(year), int(month_num) + 1, 1)
+        next_month = datetime(int(year), month_int + 1, 1)
     records = (
         db.query(
             func.date(Record.start_time).label("date"),

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { recordsApi } from "@/lib/api";
 import type { CalendarDay, RecordData } from "@/lib/types";
@@ -25,9 +25,7 @@ export default function CalendarHeatmap() {
   useEffect(() => {
     let active = true;
     const loadCalendarData = () => {
-      Promise.resolve().then(() => {
-        if (active) setLoading(true);
-      });
+      setLoading(true);
       recordsApi
         .calendar(monthStr)
         .then((res) => {
@@ -43,24 +41,9 @@ export default function CalendarHeatmap() {
 
     loadCalendarData();
 
+    // 监听记录变更事件，仅刷新月历数据；选中日期的刷新由第二个 effect 处理
     const handleRecordsChanged = () => {
       loadCalendarData();
-      if (selectedDate) {
-        Promise.resolve().then(() => {
-          if (active) setSelectedLoading(true);
-        });
-        recordsApi
-          .list({ date_from: selectedDate, date_to: selectedDate })
-          .then((res) => {
-            if (active) setSelectedRecords(res);
-          })
-          .catch(() => {
-            if (active) setSelectedRecords([]);
-          })
-          .finally(() => {
-            if (active) setSelectedLoading(false);
-          });
-      }
     };
 
     window.addEventListener(RECORDS_CHANGED_EVENT, handleRecordsChanged);
@@ -68,23 +51,22 @@ export default function CalendarHeatmap() {
       active = false;
       window.removeEventListener(RECORDS_CHANGED_EVENT, handleRecordsChanged);
     };
-  }, [monthStr, selectedDate]);
+  }, [monthStr]);
 
-  const countMap = new Map(data.map((d) => [d.date, d.count]));
-  const maxCount = Math.max(1, ...data.map((d) => d.count));
+  // 缓存日历网格计算，避免每次渲染重新创建 Map 和遍历数组
+  const { countMap, maxCount, cells } = useMemo(() => {
+    const map = new Map(data.map((d) => [d.date, d.count]));
+    const max = Math.max(1, ...data.map((d) => d.count));
+    const daysInMonth = new Date(year, month, 0).getDate();
+    const result: { date: string; day: number; count: number }[] = [];
+    for (let d = 1; d <= daysInMonth; d++) {
+      const dateStr = `${year}-${String(month).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+      result.push({ date: dateStr, day: d, count: map.get(dateStr) || 0 });
+    }
+    return { countMap: map, maxCount: max, cells: result };
+  }, [data, year, month]);
 
-  const daysInMonth = new Date(year, month, 0).getDate();
   const firstDay = new Date(year, month - 1, 1).getDay();
-
-  const cells: { date: string; day: number; count: number }[] = [];
-  for (let d = 1; d <= daysInMonth; d++) {
-    const dateStr = `${year}-${String(month).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
-    cells.push({
-      date: dateStr,
-      day: d,
-      count: countMap.get(dateStr) || 0,
-    });
-  }
 
   // 平滑色阶：从极淡到主色饱和
   const getColor = (count: number) => {

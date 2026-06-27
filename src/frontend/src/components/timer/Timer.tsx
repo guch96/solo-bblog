@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Play, Square } from "lucide-react";
@@ -12,12 +12,24 @@ export default function Timer() {
   const [seconds, setSeconds] = useState(0);
   const startTimeRef = useRef<string | null>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  // 用 ref 同步跟踪秒数，避免 stop 回调的 stale closure 问题
+  const secondsRef = useRef(0);
+
+  // 组件卸载时清理定时器，防止内存泄漏
+  useEffect(() => {
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, []);
 
   const start = useCallback(() => {
     setIsRunning(true);
+    secondsRef.current = 0;
+    setSeconds(0);
     startTimeRef.current = getCurrentLocalDateTimeString();
     intervalRef.current = setInterval(() => {
-      setSeconds((s) => s + 1);
+      secondsRef.current += 1;
+      setSeconds(secondsRef.current);
     }, 1000);
   }, []);
 
@@ -29,11 +41,11 @@ export default function Timer() {
     const params = new URLSearchParams({
       start_time: startTimeRef.current!,
       end_time: endTime,
-      duration: String(seconds),
+      duration: String(secondsRef.current),
       input_mode: "timer",
     });
     router.push(`/records/new?${params.toString()}`);
-  }, [seconds, router]);
+  }, [router]);
 
   const formatTime = (totalSeconds: number) => {
     const m = Math.floor(totalSeconds / 60);

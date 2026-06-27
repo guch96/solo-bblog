@@ -1,4 +1,5 @@
 """认证相关 API 路由：登录、注册、获取当前用户信息"""
+import os
 import logging
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
@@ -11,10 +12,15 @@ from dependencies.auth import create_access_token, get_current_user
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
+# 注册接口默认关闭，需通过环境变量 ALLOW_REGISTRATION=true 显式开启
+ALLOW_REGISTRATION = os.getenv("ALLOW_REGISTRATION", "false").lower() == "true"
+
 
 @router.post("/register", response_model=TokenResponse, status_code=201)
 def register(body: RegisterRequest, db: Session = Depends(get_db)):
-    """注册新用户（仅后端暴露，前端不提供注册页面）"""
+    """注册新用户（需设置 ALLOW_REGISTRATION=true 环境变量开启）"""
+    if not ALLOW_REGISTRATION:
+        raise HTTPException(status_code=403, detail="注册功能已关闭")
     # 检查用户名是否已存在
     existing = db.query(User).filter(User.username == body.username).first()
     if existing:

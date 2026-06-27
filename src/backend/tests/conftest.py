@@ -1,4 +1,9 @@
 """pytest fixtures"""
+import os
+
+# 测试环境启用注册接口（auth 模块在导入时读取此变量）
+os.environ["ALLOW_REGISTRATION"] = "true"
+
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine

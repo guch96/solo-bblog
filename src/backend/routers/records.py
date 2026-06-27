@@ -41,7 +41,10 @@ def calendar_data(
     current_user: User = Depends(get_current_user),  # 新增鉴权
 ):
     """获取日历热力图数据"""
-    return get_calendar_data(db, month, current_user.id)
+    try:
+        return get_calendar_data(db, month, current_user.id)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.get("/stats", response_model=dict)
