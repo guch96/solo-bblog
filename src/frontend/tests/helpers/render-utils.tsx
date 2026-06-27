@@ -25,7 +25,7 @@ function renderWithAuth(ui: ReactElement, options?: RenderWithAuthOptions) {
 }
 
 /** 创建可控的 mock router */
-function createMockRouter(overrides: { pathname?: string } = {}) {
+function createMockRouter() {
   return {
     push: vi.fn(),
     replace: vi.fn(),
@@ -36,18 +36,25 @@ function createMockRouter(overrides: { pathname?: string } = {}) {
   };
 }
 
-/** Mock next/navigation 并返回可控 router */
-function mockNextNavigation(overrides: { pathname?: string; searchParams?: URLSearchParams } = {}) {
-  const router = createMockRouter(overrides);
-  const pathname = overrides.pathname || "/";
-
-  vi.mock("next/navigation", () => ({
-    useRouter: () => router,
-    usePathname: () => pathname,
-    useSearchParams: () => overrides.searchParams || new URLSearchParams(),
-  }));
-
-  return { router, pathname };
+/**
+ * 更新 next/navigation mock 的返回值，返回新的 router/pathname。
+ *
+ * 调用前需确保测试文件已通过 vi.mock("next/navigation", ...) 建立 mock，
+ * 且 mock 实现应引用以下模块级可变对象：
+ *
+ *   - navState.pathname  (object with .current: string)
+ *   - navState.searchParams  (object with .current: URLSearchParams)
+ *
+ * 使用方法见 tests/components/BottomNav.test.tsx
+ */
+function mockNextNavigation(
+  navState: { pathname: { current: string }; searchParams: { current: URLSearchParams } },
+  overrides: { pathname?: string; searchParams?: URLSearchParams } = {},
+) {
+  navState.pathname.current = overrides.pathname ?? "/";
+  navState.searchParams.current = overrides.searchParams ?? new URLSearchParams();
+  const router = createMockRouter();
+  return { router, pathname: navState.pathname.current };
 }
 
 export { renderWithAuth, createMockRouter, mockNextNavigation };
