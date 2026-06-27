@@ -74,35 +74,7 @@ export function getHandlers() {
       return HttpResponse.json(filtered);
     }),
 
-    http.get(`${BASE_URL}/api/records/:id`, ({ params }) => {
-      const record = records.find((r) => r.id === Number(params.id));
-      if (!record) return HttpResponse.json({ detail: "记录不存在" }, { status: 404 });
-      return HttpResponse.json(record);
-    }),
-
-    http.post(`${BASE_URL}/api/records`, async ({ request }) => {
-      const body = await request.json() as Partial<RecordData>;
-      const newRecord = makeRecord({ id: Date.now() + Math.random(), ...body });
-      records.unshift(newRecord);
-      return HttpResponse.json(newRecord, { status: 201 });
-    }),
-
-    http.put(`${BASE_URL}/api/records/:id`, async ({ params, request }) => {
-      const body = await request.json() as Partial<RecordData>;
-      const idx = records.findIndex((r) => r.id === Number(params.id));
-      if (idx === -1) return HttpResponse.json({ detail: "记录不存在" }, { status: 404 });
-      records[idx] = { ...records[idx], ...body, updated_at: new Date().toISOString() };
-      return HttpResponse.json(records[idx]);
-    }),
-
-    http.delete(`${BASE_URL}/api/records/:id`, ({ params }) => {
-      const idx = records.findIndex((r) => r.id === Number(params.id));
-      if (idx === -1) return HttpResponse.json({ detail: "记录不存在" }, { status: 404 });
-      records.splice(idx, 1);
-      return new HttpResponse(null, { status: 204 });
-    }),
-
-    // ===== Calendar & Stats =====
+    // Calendar & Stats 必须放在 :id 之前，否则 :id 会先匹配到 "calendar"/"stats" 路径段
     http.get(`${BASE_URL}/api/records/calendar`, ({ request }) => {
       const url = new URL(request.url);
       const month = url.searchParams.get("month") || "2026-06";
@@ -137,6 +109,34 @@ export function getHandlers() {
         },
       };
       return HttpResponse.json(data);
+    }),
+
+    http.get(`${BASE_URL}/api/records/:id`, ({ params }) => {
+      const record = records.find((r) => r.id === Number(params.id));
+      if (!record) return HttpResponse.json({ detail: "记录不存在" }, { status: 404 });
+      return HttpResponse.json(record);
+    }),
+
+    http.post(`${BASE_URL}/api/records`, async ({ request }) => {
+      const body = await request.json() as Partial<RecordData>;
+      const newRecord = makeRecord({ id: Date.now() + Math.random(), ...body });
+      records.unshift(newRecord);
+      return HttpResponse.json(newRecord, { status: 201 });
+    }),
+
+    http.put(`${BASE_URL}/api/records/:id`, async ({ params, request }) => {
+      const body = await request.json() as Partial<RecordData>;
+      const idx = records.findIndex((r) => r.id === Number(params.id));
+      if (idx === -1) return HttpResponse.json({ detail: "记录不存在" }, { status: 404 });
+      records[idx] = { ...records[idx], ...body, updated_at: new Date().toISOString() };
+      return HttpResponse.json(records[idx]);
+    }),
+
+    http.delete(`${BASE_URL}/api/records/:id`, ({ params }) => {
+      const idx = records.findIndex((r) => r.id === Number(params.id));
+      if (idx === -1) return HttpResponse.json({ detail: "记录不存在" }, { status: 404 });
+      records.splice(idx, 1);
+      return new HttpResponse(null, { status: 204 });
     }),
 
     // ===== Analyses =====
