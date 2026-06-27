@@ -53,7 +53,7 @@ npm run dev
 - user2 / 123456（空数据）
 
 ### 环境变量
-
+   
 复制 `.env.example` 为 `.env`，填入你的 LLM 配置：（ai分析功能）
 
 ```bash
@@ -90,8 +90,16 @@ solo-bblog/
 │  │  │  │  └─ AuthGuard  # 路由鉴权守卫
 │  │  │  ├─ hooks/        # 自定义 Hooks（useAuth）
 │  │  │  └─ lib/          # API 客户端（Token 注入）、类型定义、工具函数
+│  │  ├─ tests/           # 前端测试（Vitest + RTL + MSW，26 文件）
+│  │  │  ├─ mocks/        # MSW handlers + server
+│  │  │  ├─ helpers/      # renderWithAuth 等测试工具
+│  │  │  ├─ lib/          # 工具函数测试
+│  │  │  ├─ hooks/        # Hooks 测试
+│  │  │  ├─ components/   # 组件测试
+│  │  │  └─ app/          # 页面测试
 │  │  ├─ public/          # 静态资源
-│  │  └─ package.json
+│  │  ├─ package.json
+│  │  └─ vitest.config.ts # 测试配置
 │  └─ backend/            # FastAPI 后端
 │     ├─ main.py          # 应用入口
 │     ├─ database.py      # 数据库连接

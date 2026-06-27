@@ -97,6 +97,9 @@ These local instructions override default Superpowers workflows when they confli
 - **日志**：关键执行点添加 debug/info 日志，便于开发调试
 - **数据库迁移**：新增字段需在 `main.py` 的 `lifespan` 中添加 `PRAGMA table_info` + `ALTER TABLE` 兼容逻辑（SQLite 不支持生产级迁移工具）
 - **用户认证**：JWT Token 鉴权（python-jose + passlib[bcrypt]），`get_current_user` 依赖注入所有受保护路由。Record/Analysis 按 `user_id` 数据隔离。测试账号 user1/user2:123456 在 lifespan 中自动创建
+- **前端测试**：使用 Vitest + @testing-library/react + @testing-library/jest-dom。每个新增组件/页面/Hook/工具函数必须有对应的测试文件（`*.test.ts` 或 `*.test.tsx`），统一放在 `src/frontend/tests/` 目录下按模块分子目录。API 客户端调用使用 MSW（msw）mock。关键交互（表单提交、按钮点击、条件渲染、错误状态）和边界情况（空数据、加载态、错误态）必须有覆盖
+- **后端测试**：使用 pytest + httpx（已在 `pyproject.toml` 配置）。每个新增路由/Service/工具函数必须有对应的测试文件（`test_*.py`），放在 `tests/` 目录下。API 端点测试覆盖正常流程、参数校验、认证鉴权、错误处理。Service 层测试覆盖核心业务逻辑和边界情况
+- **测试纪律**：新功能或 bug 修复必须先写测试验证（红→绿→重构），不得以"简单"、"赶时间"为由跳过。提交代码前运行完整测试套件确保无回归。CI 中测试失败视为阻塞性问题
 
 ---
 
@@ -144,8 +147,16 @@ solo-bblog/
 │  │  │  │  └─ AuthGuard.tsx     # 路由鉴权守卫
 │  │  │  ├─ hooks/               # 自定义 Hooks
 │  │  │  └─ lib/                 # 工具函数、API 客户端、类型定义
+│  │  ├─ tests/                  # 前端测试（26 文件 / 108 用例）
+│  │  │  ├─ mocks/               # MSW handlers + server
+│  │  │  ├─ helpers/             # renderWithAuth 等测试工具
+│  │  │  ├─ lib/                 # 工具函数测试
+│  │  │  ├─ hooks/               # Hooks 测试
+│  │  │  ├─ components/          # 组件测试
+│  │  │  └─ app/                 # 页面测试
 │  │  ├─ public/                 # 静态资源
 │  │  ├─ package.json
+│  │  ├─ vitest.config.ts        # 测试配置
 │  │  └─ tsconfig.json
 │  └─ backend/                   # FastAPI 后端
 │     ├─ main.py                 # 入口

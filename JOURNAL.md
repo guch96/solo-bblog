@@ -158,4 +158,99 @@ Inline Execution
 - `typeof window !== "undefined"` 的守卫让错误不明显——Server Component 不发 Token、后端返回 401、catch 块静默吞错
 - 规则：任何依赖浏览器 API（localStorage/fetch with auth）的数据请求，必须在 Client Component 的 `useEffect` 中执行
 
+### 后续工作 TODO
+- [ ] 后端数据库从 SQLite 升级为 PostgreSQL
+- [ ] 设计并实现更完善的权限体系
+- [ ] 为每个账号增加每周可用 AI 分析次数限制，而不是无限可用
+- [ ] 升级为微信小程序版本
+
+---
+
+## Day 4 - 2026/06/27
+
+### 今日目标
+- 建立前端测试体系，从零覆盖到所有现有功能模块
+
+### AGENTS.md 测试约束
+
+**先补约束再写代码：**
+- [x] 前端测试：Vitest + @testing-library/react + @testing-library/jest-dom，每个新增组件/页面/Hook/工具函数必须有对应测试，API 调用使用 MSW mock
+- [x] 后端测试：pytest + httpx，每个新增路由/Service/工具函数必须有对应测试
+- [x] 测试纪律：TDD 红→绿→重构，提交前运行完整测试套件，CI 中测试失败视为阻塞
+
+### 前端测试基础设施（全量覆盖）
+
+**流程：** brainstorming → writing-plans（32 Task，4 Phase）→ subagent-driven 执行
+
+**实施方案决策：**
+- 范围：全量覆盖（不限于新功能）
+- 工具链：Vitest + RTL + MSW（jsdom）
+- 目录：统一 `src/frontend/tests/` 按模块分子目录
+- 执行方式：Subagent-Driven（Phase 1-3 用子代理，Phase 4 页面测试直接内联编写）
+
+**技术踩坑：**
+- `@vitejs/plugin-react` 与 shadcn 的 babel 版本冲突（7.x vs 8.x），移除插件，Vitest 通过 esbuild 处理 JSX
+- MSW postinstall 在 bash PATH 中找不到 node，用 `--ignore-scripts` 跳过（仅浏览器 Service Worker 需要）
+- MSW 路由匹配顺序：`/api/records/calendar` 和 `/api/records/stats` 必须注册在 `/api/records/:id` 之前，否则被 `:id` 通配捕获返回 404
+- `vi.mock` 被 Vitest hoist 到模块顶层，闭包变量不可用。修复方案：测试文件顶层 `vi.mock` + `vi.hoisted()` 创建可变状态对象传递
+- Server Component 页面测试中，子 Client Component 使用的 `useRouter`/`usePathname`/`useParams` 都需要在 `vi.mock("next/navigation")` 中 mock
+
+### 完成事项
+
+**Phase 1: 基础设施搭建（6 文件）**
+- [x] `vitest.config.ts` — jsdom 环境 + @/ 别名 + setup 文件
+- [x] `tests/setup.ts` — MSW server 生命周期管理
+- [x] `tests/mocks/handlers.ts` — auth/records CRUD/calendar/stats/analyses 全套 MSW handler，闭包内存数据
+- [x] `tests/mocks/server.ts` — setupServer 实例
+- [x] `tests/helpers/render-utils.tsx` — `renderWithAuth`（AuthProvider 包裹 + token 预设）、`createMockRouter`、`mockNextNavigation`（navState 驱动）
+- [x] `package.json` — 7 个 devDependencies + test/test:watch 脚本
+
+**Phase 2: Lib + Hooks 测试（5 文件，37 测试）**
+- [x] `tests/lib/utils.test.ts` — cn() class 合并（5 测试）
+- [x] `tests/lib/datetime.test.ts` — 6 个日期工具函数（11 测试）
+- [x] `tests/lib/records-events.test.ts` — 事件总线（3 测试）
+- [x] `tests/lib/api.test.ts` — recordsApi 9 个 + analysesApi 3 个（12 测试）
+- [x] `tests/hooks/useAuth.test.tsx` — login/logout/isLoading/isAuthenticated（6 测试）
+
+**Phase 3: 业务组件测试（12 文件，49 测试）**
+- [x] AuthGuard、BottomNav、DesktopNav — 导航鉴权组件
+- [x] Timer — 计时器（fake timers）
+- [x] RecordCard、RecordForm、RecordList — 记录 CRUD 组件
+- [x] CalendarHeatmap — 日历热力图
+- [x] StatsSummaryCards、StatsCharts — 统计图表组件
+- [x] AnalysisCard、StreamingAnalysisCard — AI 分析卡片组件
+
+**Phase 4: 页面测试（9 文件，22 测试）**
+- [x] LoginPage — 表单渲染、空提交校验、登录跳转
+- [x] HomePage — 标题、Timer 按钮、空状态
+- [x] RecordsPage — 标题、新增按钮
+- [x] NewRecordPage — 标题、保存/取消按钮（Suspense 包裹 RecordForm）
+- [x] RecordDetailPage — 详情加载、编辑/删除按钮（useParams mock）
+- [x] EditRecordPage — 更新记录按钮、取消按钮（useParams mock）
+- [x] AnalysisPage — 标题、快捷按钮（今天/近7天/近14天/近30天）、开始分析、历史区域
+- [x] CalendarPage — 标题、月份热力图
+- [x] StatsPage — 标题、范围选择器
+
+### 最终统计
+
+```
+26 个测试文件 | 108 个测试用例 | 100% 通过率
+
+Phase 1 (基础设施):  6 文件
+Phase 2 (Lib+Hooks):  5 文件, 37 测试
+Phase 3 (组件测试):  12 文件, 49 测试
+Phase 4 (页面测试):   9 文件, 22 测试
+```
+
+### CC 使用体验
+
+**`finishing-a-development-branch` 技能的问题**
+- 该技能把 `npx tsc --noEmit`（TypeScript 类型检查）当成了前端测试的等价物，认为类型检查通过即质量合格
+- 导致此前前端没有任何实际测试用例，类型检查无法替代运行时行为验证
+- **教训：** 在 brainstorming 澄清环节需要对此类情况进行约束——前后端都必须有测试用例才能保证代码质量，不能以类型检查或构建成功替代
+
+**AGENTS.md 中增加前端测试约束**
+- 明确约束：前端测试使用 Vitest + @testing-library/react + MSW，后端测试使用 pytest + httpx
+- 明确测试纪律：新功能或 bug 修复必须先写测试（红→绿→重构），不得以"简单"、"赶时间"为由跳过
+- 将测试要求从口头约定变为文档化约束，后续任何开发分支都必须遵守
 
